@@ -1,0 +1,29 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+import sys
+HOME = "/home/peer/workspace/PNC/"
+sys.path.append(HOME)
+del sys
+
+from node import service
+
+def main():
+    print 'initialize node service...'
+    server = service.Node(False)
+    print 'register node service...'
+    server.self_register()
+    print 'start node service...'
+    server.start()
+    print 'start node done...'
+    raw_input()
+    stop_service()
+    
+def stop_service():
+    import xmlrpclib
+    server = xmlrpclib.ServerProxy('http://localhost:8080')
+    try: server.stop()
+    except: pass
+    
+if __name__ == '__main__':
+    main()

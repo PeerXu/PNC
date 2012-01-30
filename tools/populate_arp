@@ -1,0 +1,28 @@
+#!/usr/bin/env python
+import re
+import commands
+
+REG = "DST=(\d+\.\d+\.\d+\.\d+)"
+
+default_list = ["/var/log/messages",
+                "/var/log/firewall",
+                "/var/log/syslog",
+                "/var/log/kern.log"]
+
+ips = set()
+
+for name in default_list:
+    try:
+        f = open(name)
+        data = f.read()
+        ips_t = set(re.findall(REG, data))
+        ips = ips | ips_t
+    except: pass
+    finally:
+        f.close()
+
+ips = list(ips)
+
+cmd = "nmap -sP %s" % (" ".join(ips),)
+
+commands.getstatusoutput(cmd)

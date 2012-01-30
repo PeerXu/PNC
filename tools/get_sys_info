@@ -1,0 +1,7 @@
+#!/bin/sh
+
+total_memory=`cat /proc/meminfo | grep MemTotal | awk '{print $2}'`
+nr_cores=`cat /proc/cpuinfo | grep -E "^processor\s+:\s+\w+$" | wc -l`
+
+echo "total_memory="$total_memory
+echo "nr_cores="$nr_cores

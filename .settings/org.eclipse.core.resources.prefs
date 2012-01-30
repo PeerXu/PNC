@@ -1,0 +1,9 @@
+#Tue Jan 24 11:37:09 CST 2012
+eclipse.preferences.version=1
+encoding//common/controller.py=utf-8
+encoding//common/data.py=utf-8
+encoding//common/server.py=utf-8
+encoding//node/service.py=utf-8
+encoding//test/common/ut_controller.py=utf-8
+encoding//tools/startup_node=utf-8
+encoding/config.py=utf-8
