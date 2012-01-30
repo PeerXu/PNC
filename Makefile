@@ -13,6 +13,7 @@ tags:
 clean:
 	$(RM) -f $(TAGS)
 	find . -name "*~" | xargs $(RM) -f
+	for f in `find . -name "*.pyc"`;do rm -rf $$f;done
 
 lines:
 	(cd log; rm -f *.log)
