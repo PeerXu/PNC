@@ -1,8 +1,12 @@
 from django.conf.urls import patterns, include, url
+from clc import urls as clc_urls
 
 # Uncomment the next two lines to enable the admin:
 # from django.contrib import admin
 # admin.autodiscover()
+
+import os
+FILE_PATH = os.path.dirname(__file__)
 
 urlpatterns = patterns('',
     # Examples:
@@ -14,4 +18,11 @@ urlpatterns = patterns('',
 
     # Uncomment the next line to enable the admin:
     # url(r'^admin/', include(admin.site.urls)),
+    (r'^css/(?P<path>.*)$', 'django.views.static.serve', 
+     {'document_root': FILE_PATH + '/css'}),
+    (r'^images/(?P<path>.*)$', 'django.views.static.serve',
+     {'document_root': FILE_PATH + '/images'}),
+    (r'^js/(?P<path>.*)$', 'django.views.static.serve',
+     {'document_root': FILE_PATH + '/js'}),
+    (r'^clc/', include(clc_urls)),
 )
