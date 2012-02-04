@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+
+{% block title %}PNC 云平台 -- 登录{% endblock %}
+
+{% block content %}
+<h1>登录</h1>
+<form action="" method="POST">
+  {% csrf_token %}
+  <input type="text" placeholder="user name" name="username">
+  <input type="text" placeholder="password" name="password">
+  <input type="submit" value="submit">
+</form>
+{% endblock %}

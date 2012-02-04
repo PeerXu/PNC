@@ -1,17 +1,51 @@
+<style type="text/css">
+#ub {
+  font: 13px/27px Arial, sans-serif;
+  height: 30px;
+}
+#ub ul {
+  list-style: none;
+  margin: 0px;
+} 
+#ub ul li {
+  float: left;
+}
+.ubzt {
+  border-left: 1px solid transparent;
+  border-right: 1px solid transparent;
+  display: block;
+  *display: inline-block;
+  padding: 0 5px;
+  position: relative;
+  z-index: 1000
+}
+</style>
 <div id="ub">
-
-  <ol class="ubtc">
-    <li class="ubt">
-      <a class="ubzt">
-	<span class="ubtb2"></span>
-	<span class="ubts">test2</span>
-      </a>
-    </li>
-    <li class="ubt">
-      <a class="ubzt">
-	<span class="ubtb2"></span>
-	<span class="ubts">test</span>
-      </a>
-    </li>
-  </ol>
+{% if user.is_authenticated %}
+   <ul> 
+     <li>
+       <a href="#">
+	 <span class="ubzt">个人信息</span>
+       </a>
+     </li>
+     <li>
+       <a href="#">
+	 <span class="ubzt">登出</span>
+       </a>
+     </li>
+   </ul>
+{% else %}
+   <ul>
+     <li>
+       <a href="/clc/register">
+	 <span class="ubzt">注册</span>
+       </a>
+     </li>
+     <li>
+       <a href="#">
+	 <span class="ubzt">登录</span>
+       </a>
+     </li>
+   </ul>
+{% endif %}
 </div>

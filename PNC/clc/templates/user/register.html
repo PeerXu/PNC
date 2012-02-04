@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+
+{% block title %}PNC 云平台 -- 注册{% endblock %}
+
+{% block content %}
+<h1>注册用户</h1>
+<form action="" method="POST">
+  {% csrf_token %}
+  {{ form.as_p }}
+  <input type="submit" value="submit">
+</form>
+{% endblock %}

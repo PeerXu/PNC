@@ -5,68 +5,13 @@
   <title>{% block title %}{% endblock %}</title>
   {% block head_script %}{% endblock %}
   <style type="text/css">{% block head_css %}{% endblock %}</style>
-  <style type="text/css">
-  #ub {
-  font: 13px/27px Arial, sans-serif;
-  height: 30px;
-  };
-  .ubtc {
-  display: block;
-  list-style: none;
-  margin: 0;
-  padding: 0
-  };
-//  .ubzt {
-//  cursor: pointer;
-//  display: block;
-//  text-decoration: none;
-//  !important
-//  };
-//  #ub .ubt {
-//  position: relative;
-//  display: -moz-inline-box;
-//  display: inline-block;
-//  line-height: 27px;
-//  padding: 0;
-//  vertical-align: top
-//  };
-//  #ub .ubt { *display: inline };
-//  .ubts {
-//  border-left: 1px solid transparent;
-//  border-right: 1px solid transparent;
-//  display: block;
-//  *display: inline-block;
-//  padding: 0 5px;
-//  position: relative;
-//  z-index: 1000
-//  };
-//  .ubts {*display: inline};
-//  .ubts {
-//  background: #fff;
-//  border-color: #bebebe;
-//  color: #36c;
-//  padding-bottom: 1px;
-//  padding-top: 2px
-//  };
-//  .ubts {
-//  color: #fff;
-//  font-weight: bold
-//  };
-//  .ubts {
-//  padding: 27px 5px 0;
-//  *padding: 25px 5px 0
-//  };
-/*
-  #ub ol { list-style: none; margin: 0px; };
-  #ub ol li { float: left; };
-*/
-  
-  </style>
 </head>
 <body>
 {% include "user.html" %}
 {% include "logo.html" %}
+{% if user.is_authenticated %}
 {% include "nav.html" %}
+{% endif %}
 {% block content %}{% endblock %}
 </body>
 </html>

@@ -1,2 +1,35 @@
-<div id="nav_bar">
+<style type="text/css">
+#nb {
+  font: 13px/27px Arial, sans-serif;
+  height: 30px;
+}
+#nb ul {
+  list-style: none;
+  margin: 0px;
+} 
+#nb ul li {
+  float: left;
+}
+.nbzt {
+  border-left: 1px solid transparent;
+  border-right: 1px solid transparent;
+  display: block;
+  *display: inline-block;
+  padding: 0 5px;
+  position: relative;
+  z-index: 1000
+}
+</style>
+<div id="nb">
+  <ul>
+    <li>
+      <a href="#"><span class="nbzt">用户管理</span></a>
+    </li>
+    <li>
+      <a href="#"><span class="nbzt">虚拟机管理</span></a>
+    </li>
+    <li>
+      <a href="#"><span class="nbzt">资源监控</span></a>
+    </li>
+  </ul>
 </div>
