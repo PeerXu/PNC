@@ -14,6 +14,7 @@ urlpatterns = patterns('',
      {'document_root': FILE_PATH + '/js'}),
     ('^register$', "clc.views.view_register"),
     ('^login$', "clc.views.view_login"),
+    ('^logout$', "clc.views.view_logout"),
     ('^demo/hello', "clc.views.view_hello"),
     ('^demo/base', TemplateView.as_view(template_name='base.html')),
 )

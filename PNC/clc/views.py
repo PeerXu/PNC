@@ -27,9 +27,13 @@ def view_login(request):
     if request.method == "POST":
         username = request.POST.get('username', '')
         password = request.POST.get('password', '')
-        import pdb; pdb.set_trace()
+#        import pdb; pdb.set_trace()
         user = auth.authenticate(username=username, password=password)
         if user is not None and user.is_active:
             auth.login(request, user)
             return HttpResponseRedirect("/clc/demo/base")
     return render_to_response("user/login.html",context_instance=RequestContext(request, {}))
+
+def view_logout(request):
+    auth.logout(request)
+    return HttpResponseRedirect("/clc/demo/base")
