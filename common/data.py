@@ -27,8 +27,8 @@ class VirtualMachine:
         self.disk = data["disk"]
     
 class NetConfig:
-    ip = ""
-    mac = ""
+    ip = "0.0.0.0"
+    mac = "00:00:00:00:00:00"
     
     def __init__(self, data={}):
         if not data:

@@ -19,7 +19,7 @@ class Node(Controller):
     def __init__(self, is_daemon=True):
         # initialize controller
         Controller.__init__(self, Node.ADDR, "node", config.NODE_LOG, config.LOG_LEVEL, is_daemon)
-        self._logger.info("ippnitialze controller done")
+        self._logger.info("initialze controller done")
         
         # 0 no _initialized, 1 has been _initialized, -1 _initialized error or initialing. 
         self._initialized = 0
@@ -106,10 +106,10 @@ class Node(Controller):
             self._logger.error("get system information failed")
             sys.exit(1)
 
-        rs_cores = utils.get_vale_from_outpout(output, "nr_cores")
+        rs_cores = utils.get_value_from_outpout(output, "nr_cores")
         rs_cores = int(rs_cores)
         
-        rs_mem = utils.get_vale_from_outpout(output, "total_memory")
+        rs_mem = utils.get_value_from_outpout(output, "total_memory")
         rs_mem = int(rs_mem)
         
         if rs_cores == -1 or rs_mem == -1:
@@ -182,7 +182,6 @@ class Node(Controller):
                 self._free_resource(inst.params)
                 self._res_lock.release()
 
-                
                 # change instance state to teardown, all resource has been release
                 self._change_instance_state(inst, InstanceState.TEARDOWN)
                 inst.termination_time = time.time()
@@ -285,31 +284,46 @@ class Node(Controller):
             return
 
         # check network
-        # pass
+        # pass now
         
         # check image detail
         # if false, change state to teardown
+        # pass now
         
         # gen libvirt xml
-        
+        uuid = utils.uuid_generator(inst.instance_id)
+        mac = utils.mac_generator(inst.instance_id)
+        inst.net.mac = mac.upper()
+        xml = utils.gen_libvirt_xml(inst.instance_id, uuid, inst.params.mem, inst.params.cores, inst.image_url, mac)
+
         # print running instance?
         self._print_running_instances()
-        
-        # startup instance from libvirt
-        inst.boot_time = time.time()
-        
+
+        # startup instance from xml
+        dom = None
+        try:
+            dom = self._nc_detail.vir_conn.createXML(xml, 0)
+        except: pass
+
+        if dom is None:
+            self._logger.error("hypervisor failed to start domain")
+            inst.state_code = InstanceState.SHUTOFF
+            return
+
         # change instance state to booting
         self._change_instance_state(inst, InstanceState.BOOTING)
         inst.boot_time = time.time()
-        
+
         self._logger.info("instance %s startup." % inst.instance_id)
         
     def _print_running_instances(self):
         count = 0
-        [+ +count for inst in self._iter_global_instances() if inst.state_code in 
-         (InstanceState.RUNNING,
-          InstanceState.PAUSED,
-          InstanceState.BLOCKED)]
+        for inst in self._iter_global_instances():
+            if inst.state_code in (InstanceState.RUNNING,
+                                   InstanceState.PAUSED,
+                                   InstanceState.BLOCKED):
+                count = count + 1
+
         self._logger.info("running instances: %d" % (count,))
         self._logger.debug("_global_instances count: %d" % (self._global_instances_size(),))
     
@@ -373,22 +387,22 @@ class Node(Controller):
             self._logger.error("unknown state (%d) for instance" % now)
         
         # refresh instance ip
-        if inst.instance_id not in (InstanceState.RUNNING,
+        if inst.state_code not in (InstanceState.RUNNING,
                                     InstanceState.BLOCKED,
                                     InstanceState.PAUSED):
             return
 
-        if inst.net_config.ip != "0.0.0.0":
+        if inst.net.ip != "0.0.0.0":
             return
         
         self._logger.debug("lookup instance %s ip from mac: %s" % \
-                           (inst.instance_id, inst.net_config.mac))
-        ip = self._discover_ip_from_mac(inst.net_config.mac)
+                           (inst.instance_id, inst.net.mac))
+        ip = self._discover_ip_from_mac(inst.net.mac)
         if ip is "0.0.0.0":
             return
-        inst.net_config.ip = ip
+        inst.net.ip = ip
         self._logger.info("domain %s discover ip: %s" % \
-                          (inst.instance_id, inst.net_config.ip))
+                          (inst.instance_id, inst.net.ip))
         
     def _discover_ip_from_mac(self, mac):
         # lookup ip from /proc/net/arp
@@ -491,8 +505,8 @@ class Node(Controller):
                         reservation_id,
                         params, # data.VirtualMachine
                         image_id, image_url,
-                        kernel_id, kernel_url,
-                        ramdisk_id, ramdisk_url,
+                        kernel_id, kernel_url, # should be set none
+                        ramdisk_id, ramdisk_url, # should be set none
                         net_config, # data.NetConfig
                         user_id):
         self._inst_lock.acquire()
@@ -529,7 +543,7 @@ class Node(Controller):
         
         self._startup_instance_thread(inst)
         
-        return Result.new(0x0, "run instance")    
+        return Result.new(0x0, "run instance")
     
     def do_reboot_instance(self):
         return Result.new(0x0, 'reboot instance')

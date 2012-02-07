@@ -1,43 +1,91 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-#LIBVIRT_CONNECTION = "qemu:///system"
-LIBVIRT_CONNECTION = "test:///default"
+LIBVIRT_CONNECTION = "qemu:///system"
+#LIBVIRT_CONNECTION = "test:///default"
 #STD_XML_CHAR = "abcdefghijklmnopqrstuvwxyz\
 #                ABCDEFGHIJKLMNOPQRSTUVWXYZ\
 #                0123456789\
 #                _"
 
-STANDARD_XML = """<domain type='kvm'>
-    <name>{{ NAME }}</name>
+INSTANCE_MAC_PREFIX = "0A:EE:EE"
+
+STANDARD_XML = """
+<domain type='kvm'>
+  <name>{{ NAME }}</name>
   <uuid>{{ UUID }}</uuid>
   <memory>{{ MEMORY }}</memory>
   <currentMemory>{{ CURRENTMEMORY }}</currentMemory>
   <vcpu>{{ VCPU }}</vcpu>
   <os>
-    <type arch="i686">hvm</type>
+    <type arch='x86_64' machine='pc-0.12'>hvm</type>
+    <boot dev='hd'/>
   </os>
-  <clock sync="localtime"/>
+  <features>
+    <acpi/>
+    <apic/>
+    <pae/>
+  </features>
+  <clock offset='utc'/>
+  <on_poweroff>destroy</on_poweroff>
+  <on_reboot>restart</on_reboot>
+  <on_crash>restart</on_crash>
   <devices>
-    <emulator>/usr/bin/qemu-kvm</emulator>
+    <emulator>/usr/bin/kvm</emulator>
     <disk type='file' device='disk'>
+      <driver name='qemu' type='qcow2' cache='writeback'/>
       <source file='{{ DISK_SOURCE_FILE }}'/>
-      <target dev='{{ DISK_TARGET_DEV }}'/>
+      <target dev='{{ DISK_TARGET_DEV }}' bus='ide'/>
     </disk>
     <interface type='network'>
       <source network='default'/>
       <mac address='{{ MAC_ADDRESS }}'/>
     </interface>
-    <graphics type='vnc' port='-1' keymap='de'/>
+    <console type='pty'>
+      <target port='0'/>
+    </console>
+    <console type='pty'>
+      <target port='0'/>
+    </console>
+    <input type='mouse' bus='ps2'/>
+    <graphics type='vnc' port='-1' autoport='yes' keymap='en-us'/>
+    <video>
+      <model type='cirrus' vram='9216' heads='1'/>
+    </video>
   </devices>
-</domain>"""
+</domain>
+"""
+#"""<domain type='kvm'>
+#    <name>{{ NAME }}</name>
+#  <uuid>{{ UUID }}</uuid>
+#  <memory>{{ MEMORY }}</memory>
+#  <currentMemory>{{ CURRENTMEMORY }}</currentMemory>
+#  <vcpu>{{ VCPU }}</vcpu>
+#  <os>
+#    <type arch="i686">hvm</type>
+#  </os>
+#  <clock sync="localtime"/>
+#  <devices>
+#    <emulator>/usr/bin/qemu-kvm</emulator>
+#    <disk type='file' device='disk'>
+#      <source file='{{ DISK_SOURCE_FILE }}'/>
+#      <target dev='{{ DISK_TARGET_DEV }}'/>
+#    </disk>
+#    <interface type='network'>
+#      <source network='default'/>
+#      <mac address='{{ MAC_ADDRESS }}'/>
+#    </interface>
+#    <graphics type='vnc' port='-1' keymap='de'/>
+#  </devices>
+#</domain>"""
+
+
 
 #
 # PATH
 #
-
 #HOME_PATH = "/home/cloud/PNC/"
-HOME_PATH = "/home/peer/workspace/PNC/"
+HOME_PATH = "/home/cloud/workspace/PNC/"
 
 TOOLS_PATH = HOME_PATH + "tools/"
 
@@ -86,4 +134,4 @@ NODE_MONITOR_INTERVAL = 5
 TEARDOWN_STATE_DURATION = 10 #180
 BOOTING_CLEANED_THRESHOLD = 10 #60 * 60 * 2
 
-NODE_PASSWD = "ji97ilkoa"
+NODE_PASSWD = "asd"

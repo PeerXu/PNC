@@ -16,17 +16,17 @@ class Test(unittest.TestCase):
         
         def threads_on_run_instance(rand):
             params = data.VirtualMachine()
-            params.cores = 1
+            params.cores = 2
             params.disk = 0
-            params.mem = 10
+            params.mem = 1024
             server = xmlrpclib.ServerProxy('http://%s:%d' % (config.NODE_ADDR[0], config.NODE_ADDR[1]))
             result = server.do_run_instance(
-                                            "test%s" % (str(rand.random())),
-                                            #"test",
+                                            #"test%s" % (str(rand.random())),
+                                            "test",
                                             "None",
                                             params, # VirtualMachine
                                             "None",
-                                            "None",
+                                            "/home/cloud/image/xp.qcow2",
                                             "None",
                                             "None",
                                             "None",
