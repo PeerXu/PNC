@@ -222,10 +222,8 @@ class Node(Controller):
         return self._global_instances[idx]
 
     def _iter_global_instances(self):
-        return iter(self._global_instances)        
+        return iter(self._global_instances)
 
-
-    
     def _allocate_resource(self, params): #data.VirtualMachine
         
         if params.mem <= self._nc_detail.mem_max and \
@@ -271,7 +269,6 @@ class Node(Controller):
     
     def _startup_instance_thread(self, inst):
         self._logger.debug("invoked")
-        
         threading.Thread(target=self._thread_run_instance, args=(inst,)).start()
         
     def _thread_run_instance(self, inst):
@@ -342,7 +339,6 @@ class Node(Controller):
         try:
             self._hyp_lock.acquire()
             dom = self._nc_detail.vir_conn.lookupByName(inst.instance_id)
-            self._hyp_lock.release()
         except:
             if now == InstanceState.RUNNING or \
                now == InstanceState.BLOCKED or \
@@ -351,6 +347,8 @@ class Node(Controller):
                 self._logger.warn("Failed to find %s in node." % inst.instance_id)
                 self._change_instance_state(inst, InstanceState.SHUTOFF)
             return
+        finally:
+            self._hyp_lock.release()
 
         # try to get instance state
         try:
@@ -398,7 +396,7 @@ class Node(Controller):
         self._logger.debug("lookup instance %s ip from mac: %s" % \
                            (inst.instance_id, inst.net.mac))
         ip = self._discover_ip_from_mac(inst.net.mac)
-        if ip is "0.0.0.0":
+        if ip == "0.0.0.0":
             return
         inst.net.ip = ip
         self._logger.info("domain %s discover ip: %s" % \
@@ -419,12 +417,13 @@ class Node(Controller):
             line = f.readline()
             while line:
                 (ip_t, _hw, _flags, mac_t, _mask, _dev) = line.split()
-                if mac_t == mac:
+                if mac_t.lower() == mac.lower():
                     return ip_t
+                line = f.readline()
         finally:
             f.close()
         
-        return "00:00:00:00"
+        return "0.0.0.0"
         
     def _change_instance_state(self, inst, state):
         self._logger.debug("instance %s change to %s from %s" % \
@@ -480,6 +479,55 @@ class Node(Controller):
         
         return inst
     
+    def _startup_reboot_instance_thread(self, inst):
+        self._logger.debug("invoked")
+        threading.Thread(target=self._reboot_instance_thread, args=(inst,)).start()
+
+    def _reboot_instance_thread(self, inst):
+        self._logger.debug("invoked")
+
+        conn = self._check_connect()
+        if conn == None:
+            self._logger.warning("cannot restart instance %s, abandoning it" % inst.instance_id)
+            inst.state_code = InstanceState.SHUTOFF
+            return        
+        
+        xml = None
+        
+        try:
+            self._hyp_lock.acquire()
+            # lookup instance
+            dom = conn.lookupByName(inst.instance_id)
+            # get xml string from domain
+            xml = dom.XMLDesc()
+            # shutdown instance 
+            dom.destroy()
+        except:
+            self._logger.warning("cannot restart instance %s, abandoning it" % inst.instance_id)
+            inst.state_code = InstanceState.SHUTOFF
+            return
+        finally:
+            self._hyp_lock.release()
+
+        try:
+            self._hyp_lock.acquire()
+            # start instance from xml
+            dom = conn.createXML(xml, 0)
+            if dom == None:
+                self._logger.warning("hypervisor failed to start instance %s" % inst.instance_id)
+                raise
+        except:
+            self._logger.warning("cannot restart instance %s, abandoning it" % inst.instance_id)
+            inst.state_code = InstanceState.SHUTOFF
+            return
+        finally:
+            self._hyp_lock.release()
+
+        # attach volume
+        # pass now
+
+        self._logger.debug("done")
+    
     def do_power_down(self):
         return Result.new(0x0, 'power down')
     
@@ -494,7 +542,7 @@ class Node(Controller):
                 self._change_instance_state(inst, InstanceState.SHUTOFF)
         finally:
             self._inst_lock.release()
-                    
+
         return Result.new(0x0, 'terminate instance')
 
     def do_describe_instances(self):
@@ -515,7 +563,6 @@ class Node(Controller):
         if idx != -1:
             self._logger.error("instance %s is already running." % instance_id)
             return Result.new(0xFFFFFFFF, "failed to startup instance %s" % (instance_id,))
-
         
         params_t = data.VirtualMachine(params)
         net_config_t = data.NetConfig(net_config)
@@ -544,10 +591,22 @@ class Node(Controller):
         self._startup_instance_thread(inst)
         
         return Result.new(0x0, "run instance")
-    
-    def do_reboot_instance(self):
-        return Result.new(0x0, 'reboot instance')
 
+    def do_reboot_instance(self, instance_id):
+        inst = None
+        try:
+            self._inst_lock.acquire()
+            inst = self._get_instance(instance_id)
+            if inst == None:
+                self._logger.error("cannot find instance %s" % instance_id)
+                return Result.new(0xFFFFFFFF, 'cannot find instance %s' % instance_id)
+        finally:
+            self._inst_lock.release()
+            
+        self._startup_reboot_instance_thread(inst)
+
+        return Result.new(0x0, 'reboot instance %s' % instance_id)
+    
     def do_get_console_output(self):
         return Result.new(0x0, 'get console output')
 

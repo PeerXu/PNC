@@ -16,13 +16,13 @@ class Test(unittest.TestCase):
         
         def threads_on_run_instance(rand):
             params = data.VirtualMachine()
-            params.cores = 2
+            params.cores = 1
             params.disk = 0
-            params.mem = 1024
+            params.mem = 64
             server = xmlrpclib.ServerProxy('http://%s:%d' % (config.NODE_ADDR[0], config.NODE_ADDR[1]))
             result = server.do_run_instance(
-                                            #"test%s" % (str(rand.random())),
-                                            "test",
+                                            "test%s" % (str(rand.random())),
+                                            #"test",
                                             "None",
                                             params, # VirtualMachine
                                             "None",
@@ -35,7 +35,7 @@ class Test(unittest.TestCase):
                                             "None")
             if result["code"]:
                 assert False
-            Test.assertEqual(self, result["msg"], 'run instance')
+            Test.assertEqual(self, result["data"], 'run instance')
         
         rand = random.Random()
         thread_count = 1

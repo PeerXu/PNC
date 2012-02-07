@@ -161,19 +161,19 @@ class NodeDetail:
 
 class Result:
     code = 0xFFFFFFFF
-    msg = ""
+    data = None
     
     def __init__(self, data={}):
         if not data:
             return
         self.code = data["code"]
-        self.msg = data["msg"]
+        self.data = data["data"]
         
     @staticmethod
-    def new(code, msg):
+    def new(code, data):
         rs = Result()
         rs.code = code
-        rs.msg = msg
+        rs.data = data
         return rs
 
 def meta_state_factory(clazz, array):

@@ -43,7 +43,7 @@ def _gen_libvirt_xml(std_xml, arguments, std_fm="""{{ %s }}"""):
         return reduce(lambda x, acc: std_fm % acc in std_args and x,
                       keys,
                       True)
-    
+
     def format_arguments():
         rs = {}
         for (k, v) in arguments.items():
@@ -82,7 +82,6 @@ def mac_generator(slat):
     tmp = m.hexdigest()
     tmp = tmp[:6]
     return config.INSTANCE_MAC_PREFIX + ":" + str(tmp[0:2]) + ":" + str(tmp[2:4]) + ":" + str(tmp[4:6])
-    
 
 class Lock():
     #_rand = random.Random()
