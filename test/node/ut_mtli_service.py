@@ -19,7 +19,8 @@ class Test(unittest.TestCase):
             params.cores = 1
             params.disk = 0
             params.mem = 64
-            server = xmlrpclib.ServerProxy('http://%s:%d' % (config.NODE_ADDR[0], config.NODE_ADDR[1]))
+            server_url = 'http://%s:%d' % (config.NODE_ADDR[0], config.NODE_ADDR[1])
+            server = xmlrpclib.ServerProxy(server_url)
             result = server.do_run_instance(
                                             "test%s" % (str(rand.random())),
                                             #"test",
@@ -38,7 +39,7 @@ class Test(unittest.TestCase):
             Test.assertEqual(self, result["data"], 'run instance')
         
         rand = random.Random()
-        thread_count = 1
+        thread_count = 5
         threads = []
         [threads.append(threading.Thread(target=threads_on_run_instance, args=(rand,))) for _ in xrange(thread_count)]
         [t.start() for t in threads]

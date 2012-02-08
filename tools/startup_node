@@ -21,9 +21,9 @@ def main():
     
 def stop_service():
     import xmlrpclib
-    server = xmlrpclib.ServerProxy('http://localhost:8080')
+    server = xmlrpclib.ServerProxy('http://localhost:18003')
     try: server.stop()
     except: pass
-    
+
 if __name__ == '__main__':
     main()

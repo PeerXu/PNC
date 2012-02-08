@@ -69,7 +69,7 @@ class Node(Controller):
     def start(self):
         # _initialized node detail
         self._logger.info("initialize node detail")
-        
+
         rs = self._init_node()
         if rs == 1:
             self._logger.error("node has _initialized")
@@ -90,7 +90,7 @@ class Node(Controller):
         if status:
             self._logger.error("failed to run iptable, please check your config password.")
             sys.exit(1)
-        self._logger.info("add iptable rule.")        
+        self._logger.info("add iptable rule.")
         
     def stop(self):
         self._logger.debug("invoked")
@@ -277,7 +277,8 @@ class Node(Controller):
         # check connection
         if not self._check_connect():
             self._logger.error("could not start instance %s, abandoning it." % inst.instance_id)
-            inst.state_code = InstanceState.SHUTOFF
+            #inst.state_code = InstanceState.SHUTOFF
+            self._change_instance_state(inst, InstanceState.SHUTOFF)
             return
 
         # check network
@@ -304,7 +305,8 @@ class Node(Controller):
 
         if dom is None:
             self._logger.error("hypervisor failed to start domain")
-            inst.state_code = InstanceState.SHUTOFF
+            #inst.state_code = InstanceState.SHUTOFF
+            self._change_instance_state(inst, InstanceState.SHUTOFF)
             return
 
         # change instance state to booting
@@ -328,7 +330,7 @@ class Node(Controller):
         
         # refresh instance state
         now = inst.state_code
-        
+
         if now == InstanceState.TEARDOWN:
             return
         
@@ -360,7 +362,7 @@ class Node(Controller):
             return
 
         xen = info[0]
-        
+
         if now in (InstanceState.BOOTING,
                    InstanceState.RUNNING,
                    InstanceState.BLOCKED,
@@ -376,9 +378,11 @@ class Node(Controller):
                 self._logger.warn("detected prodigal domain %s, terminating it" % inst.instance_id)
                 # should i acquire a lock?
                 # yes, i shoud acquire a hyp-lock
-                self._hyp_lock.acquire()
-                dom.destroy()
-                self._hyp_lock.release()
+                try:
+                    self._hyp_lock.acquire()
+                    dom.destroy()
+                finally:
+                    self._hyp_lock.release()
             else:
                 self._change_instance_state(inst, xen)
         else:
@@ -456,7 +460,7 @@ class Node(Controller):
             return inst
         finally:
             self._hyp_lock.release()
-        
+
         try:
             self._hyp_lock.acquire()
             if destroy:
@@ -489,7 +493,8 @@ class Node(Controller):
         conn = self._check_connect()
         if conn == None:
             self._logger.warning("cannot restart instance %s, abandoning it" % inst.instance_id)
-            inst.state_code = InstanceState.SHUTOFF
+            #inst.state_code = InstanceState.SHUTOFF
+            self._change_instance_state(inst, InstanceState.SHUTOFF)
             return        
         
         xml = None
@@ -499,16 +504,16 @@ class Node(Controller):
             # lookup instance
             dom = conn.lookupByName(inst.instance_id)
             # get xml string from domain
-            xml = dom.XMLDesc()
+            xml = dom.XMLDesc(0)
             # shutdown instance 
             dom.destroy()
         except:
             self._logger.warning("cannot restart instance %s, abandoning it" % inst.instance_id)
-            inst.state_code = InstanceState.SHUTOFF
+            #inst.state_code = InstanceState.SHUTOFF
+            self._change_instance_state(inst, InstanceState.SHUTOFF)
             return
         finally:
             self._hyp_lock.release()
-
         try:
             self._hyp_lock.acquire()
             # start instance from xml
@@ -518,7 +523,8 @@ class Node(Controller):
                 raise
         except:
             self._logger.warning("cannot restart instance %s, abandoning it" % inst.instance_id)
-            inst.state_code = InstanceState.SHUTOFF
+            #inst.state_code = InstanceState.SHUTOFF
+            self._change_instance_state(inst, InstanceState.SHUTOFF)
             return
         finally:
             self._hyp_lock.release()
@@ -527,17 +533,20 @@ class Node(Controller):
         # pass now
 
         self._logger.debug("done")
-    
+
+    def do_get_version(self):
+        return config.VERSION
+
     def do_power_down(self):
         return Result.new(0x0, 'power down')
-    
+
     def do_terminate_instance(self, instance_id):
         try:
             self._inst_lock.acquire()
             inst = self._find_and_terminate_instance(instance_id, 1)
             if inst == None:
                 return Result.new(0xFFFFFFFF, "instance not found")
-            
+
             if inst.state_code != InstanceState.TEARDOWN:
                 self._change_instance_state(inst, InstanceState.SHUTOFF)
         finally:
@@ -545,8 +554,18 @@ class Node(Controller):
 
         return Result.new(0x0, 'terminate instance')
 
-    def do_describe_instances(self):
-        return Result.new(0x0, 'describe instances')
+    def do_describe_instances(self, inst_ids):
+        if not isinstance(inst_ids, list):
+            self._logger.error("error arguments with: " + inst_ids)
+            return Result.new(0xFFFFFFFF, {'msg': "error arguments"})
+        rs = []
+        try:
+            self._inst_lock.acquire()
+            [rs.append(self._get_instance(inst_id)) for inst_id in inst_ids]
+        finally:
+            self._inst_lock.release()
+        return Result.new(0x0, {'msg': 'describe instances',
+                                'instances': rs})
 
     def do_run_instance(self,
                         instance_id,
@@ -563,7 +582,7 @@ class Node(Controller):
         if idx != -1:
             self._logger.error("instance %s is already running." % instance_id)
             return Result.new(0xFFFFFFFF, "failed to startup instance %s" % (instance_id,))
-        
+
         params_t = data.VirtualMachine(params)
         net_config_t = data.NetConfig(net_config)
         
@@ -602,22 +621,20 @@ class Node(Controller):
                 return Result.new(0xFFFFFFFF, 'cannot find instance %s' % instance_id)
         finally:
             self._inst_lock.release()
-            
         self._startup_reboot_instance_thread(inst)
-
         return Result.new(0x0, 'reboot instance %s' % instance_id)
     
     def do_get_console_output(self):
-        return Result.new(0x0, 'get console output')
+        return Result.new(0xFFFFFFFF, 'get console output')
 
     def do_describe_resource(self):
-        return Result.new(0x0, 'describe resource')
+        return Result.new(0xFFFFFFFF, 'describe resource')
 
     def do_start_network(self):
-        return Result.new(0x0, 'start network')
+        return Result.new(0xFFFFFFFF, 'start network')
 
-    def do_attach_volume(self): 
-        return Result.new(0x0, 'attache volume')
+    def do_attach_volume(self):
+        return Result.new(0xFFFFFFFF, 'attache volume')
 
-    def do_detach_volume(self): 
-        return Result.new(0x0, 'detach volume')
+    def do_detach_volume(self):
+        return Result.new(0xFFFFFFFF, 'detach volume')

@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+VERSION = "0.1.1"
+
 LIBVIRT_CONNECTION = "qemu:///system"
 #LIBVIRT_CONNECTION = "test:///default"
 #STD_XML_CHAR = "abcdefghijklmnopqrstuvwxyz\
