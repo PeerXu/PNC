@@ -147,9 +147,9 @@ class Node(Controller):
 
     def _startup_monitor_thread(self):
         self._logger.debug("invoked.")
-        
+
         self._monitor_thread.start()
-        
+
     def _thread_monitor(self):
         self._logger.debug("invoked.")
         while True:
@@ -378,11 +378,8 @@ class Node(Controller):
                 self._logger.warn("detected prodigal domain %s, terminating it" % inst.instance_id)
                 # should i acquire a lock?
                 # yes, i shoud acquire a hyp-lock
-                try:
-                    self._hyp_lock.acquire()
+                with self._hyp_lock:
                     dom.destroy()
-                finally:
-                    self._hyp_lock.release()
             else:
                 self._change_instance_state(inst, xen)
         else:
@@ -414,8 +411,7 @@ class Node(Controller):
         if status:
             self._logger.warn("failed to execute script: %s" % (CMD,))
 
-        try:
-            f = open(ARP_PATH)
+        with open(ARP_PATH) as f:
             f.readline()
             
             line = f.readline()
@@ -424,8 +420,6 @@ class Node(Controller):
                 if mac_t.lower() == mac.lower():
                     return ip_t
                 line = f.readline()
-        finally:
-            f.close()
         
         return "0.0.0.0"
         
@@ -541,29 +535,31 @@ class Node(Controller):
         return Result.new(0x0, 'power down')
 
     def do_terminate_instance(self, instance_id):
-        try:
-            self._inst_lock.acquire()
+        
+        with self._inst_lock:
             inst = self._find_and_terminate_instance(instance_id, 1)
             if inst == None:
-                return Result.new(0xFFFFFFFF, "instance not found")
+                return Result.new(0xFFFF, "instance not found")
 
             if inst.state_code != InstanceState.TEARDOWN:
                 self._change_instance_state(inst, InstanceState.SHUTOFF)
-        finally:
-            self._inst_lock.release()
-
+                
         return Result.new(0x0, 'terminate instance')
 
     def do_describe_instances(self, inst_ids):
+
         if not isinstance(inst_ids, list):
             self._logger.error("error arguments with: " + inst_ids)
-            return Result.new(0xFFFFFFFF, {'msg': "error arguments"})
+            return Result.new(0xFFFF, {'msg': "error arguments"})
+        
         rs = []
-        try:
-            self._inst_lock.acquire()
-            [rs.append(self._get_instance(inst_id)) for inst_id in inst_ids]
-        finally:
-            self._inst_lock.release()
+        
+        with self._inst_lock:
+            #[rs.append(self._get_instance(inst_id)) for inst_id in inst_ids]
+            for inst_id in inst_ids:
+                inst = self._get_instance(inst_id)
+                inst and rs.append(inst)
+
         return Result.new(0x0, {'msg': 'describe instances',
                                 'instances': rs})
 
@@ -576,12 +572,13 @@ class Node(Controller):
                         ramdisk_id, ramdisk_url, # should be set none
                         net_config, # data.NetConfig
                         user_id):
+        
         self._inst_lock.acquire()
         idx = self._has_instance(instance_id)
         self._inst_lock.release()
         if idx != -1:
             self._logger.error("instance %s is already running." % instance_id)
-            return Result.new(0xFFFFFFFF, "failed to startup instance %s" % (instance_id,))
+            return Result.new(0xFFFF, "failed to startup instance %s" % (instance_id,))
 
         params_t = data.VirtualMachine(params)
         net_config_t = data.NetConfig(net_config)
@@ -595,13 +592,10 @@ class Node(Controller):
                                           InstanceState.PENDING,
                                           net_config_t,
                                           user_id)
-        try:
-            self._res_lock.acquire()
+        with self._res_lock:
             if self._allocate_resource(inst.params):
                 self._logger.warn("failed to allocate resource")
-                return Result.new(0xFFFFFFFF, "failed to allocate resource")
-        finally:
-            self._res_lock.release()
+                return Result.new(0xFFFF, "failed to allocate resource")            
 
         self._inst_lock.acquire()
         self._add_instance(inst)
@@ -612,29 +606,60 @@ class Node(Controller):
         return Result.new(0x0, "run instance")
 
     def do_reboot_instance(self, instance_id):
-        inst = None
-        try:
-            self._inst_lock.acquire()
+        with self._inst_lock:
             inst = self._get_instance(instance_id)
             if inst == None:
                 self._logger.error("cannot find instance %s" % instance_id)
-                return Result.new(0xFFFFFFFF, 'cannot find instance %s' % instance_id)
-        finally:
-            self._inst_lock.release()
+                return Result.new(0xFFFF, 'cannot find instance %s' % instance_id)
+
         self._startup_reboot_instance_thread(inst)
+        
         return Result.new(0x0, 'reboot instance %s' % instance_id)
-    
+
     def do_get_console_output(self):
-        return Result.new(0xFFFFFFFF, 'get console output')
+        return Result.new(0xFFFF, 'get console output')
 
     def do_describe_resource(self):
-        return Result.new(0xFFFFFFFF, 'describe resource')
+        sum_cores = sum_mem = sum_disk = 0
+        
+        for inst in self._iter_global_instances():
+            if inst.state_code == InstanceState.TEARDOWN:
+                continue
+            sum_cores = sum_cores + inst.params.cores
+            sum_mem = sum_mem + inst.params.mem
+            sum_disk = sum_disk + inst.params.disk
+            
+        cores_free = self._nc_detail.config_max_cores - sum_cores
+        if cores_free < 0:
+            self._logger.warning("Error cores free with %d, fix to 0" % cores_free)
+            cores_free = 0
+            
+        mem_free = self._nc_detail.config_max_mem - sum_mem
+        if mem_free < 0:
+            self._logger.warning("Error memory free with %d, fix to 0" % mem_free)
+            mem_free = 0
+            
+        disk_free = self._nc_detail.config_max_disk - sum_disk
+        if disk_free < 0:
+            self._logger.warning("Error disk free with %d, fix to 0" % disk_free)
+            disk_free = 0
+            
+        res = data.NodeResource.new_instance("ok",
+                                             self._nc_detail.config_max_mem, 
+                                             mem_free, 
+                                             self._nc_detail.config_max_disk, 
+                                             disk_free, 
+                                             self._nc_detail.config_max_cores, 
+                                             cores_free)
+        
+        return Result.new(0x0, {'msg': 'describe resource',
+                                'resource': res})
 
     def do_start_network(self):
-        return Result.new(0xFFFFFFFF, 'start network')
+        return Result.new(0xFFFF, 'start network')
 
     def do_attach_volume(self):
-        return Result.new(0xFFFFFFFF, 'attache volume')
+        return Result.new(0xFFFF, 'attache volume')
 
     def do_detach_volume(self):
-        return Result.new(0xFFFFFFFF, 'detach volume')
+        return Result.new(0xFFFF, 'detach volume')

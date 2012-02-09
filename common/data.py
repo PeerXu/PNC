@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import time
-
 class Metadata:
     correlation_id = ""
     user_id = ""
@@ -99,9 +97,9 @@ class Instance:
                      state,
                      net_config,
                      user_id):
-        
+
         inst = Instance()
-        
+
         inst.instance_id = instance_id
         inst.reservation_id = reservation_id
         inst.params = params
@@ -117,7 +115,7 @@ class Instance:
 
         return inst
         
-class Resource:
+class NodeResource:
     node_status = ""
     mem_size_max = 0
     mem_size_available = 0
@@ -136,6 +134,27 @@ class Resource:
         self.disk_size_available = data["disk_size_available"]
         self.number_cores_max = data["number_cores_max"]
         self.number_cores_available = data["number_cores_available"]
+        
+    @staticmethod
+    def new_instance(node_status,
+                     mem_size_max,
+                     mem_size_available,
+                     disk_size_max,
+                     disk_size_available,
+                     number_cores_max,
+                     number_cores_available):
+        
+        res = NodeResource()
+        
+        res.node_status = node_status
+        res.mem_size_max = mem_size_max
+        res.mem_size_available = mem_size_available
+        res.disk_size_max = disk_size_max
+        res.disk_size_available = disk_size_available
+        res.number_cores_max = number_cores_max
+        res.number_cores_available = number_cores_available
+        
+        return res
 
 class NodeDetail:
     uri = ""
@@ -190,24 +209,7 @@ class ControlState:
     LOST = 2
     
 class NodeState(ControlState): pass
-    
-#class InstanceState:
-#    NOSTATE = 0
-#    RUNNING = 1
-#    BLOCKED = 2
-#    PAUSED = 3
-#    SHUTDOWN = 4
-#    SHUTOFF = 5
-#    CRASHED = 6
-#    BOOTING = 7
-#    CANCELED = 8
-#    BUNDLING_SHUTDOWN = 9
-#    BUNDLING_SHUTOFF = 10
-#    
-#    PENDING = 11 # staging in data, starting to boot, failed to boot
-#    EXTANT = 12 # guest OS booting, running, shutting down, cleaning up state
-#    TEARDOWN = 13 # a marker for a terminated domain, one not taking up resources
-    
+
 class InstanceState: pass
 instance_state_list = [("NOSTATE", 0),
                        ("RUNNING", 1),

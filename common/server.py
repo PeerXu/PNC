@@ -16,7 +16,7 @@ class PNCXMLRPCServer(SocketServer.ThreadingTCPServer,
     _send_traceback_header = False
 
     def __init__(self, addr, requestHandler=SimpleXMLRPCRequestHandler,
-                 logRequests=True, allow_none=False, encoding=None, bind_and_activate=True):
+                 logRequests=True, allow_none=True, encoding=None, bind_and_activate=True):
         self.logRequests = logRequests
 
         SimpleXMLRPCDispatcher.__init__(self, allow_none, encoding)
@@ -40,7 +40,7 @@ class Server(PNCXMLRPCServer):
             raise Exception, "Server is running."
 
         self.__running = True
-        
+
 #        if os.fork() == 0:
 #            self.serve_forever()
         try: threading.Thread(target=self.serve_forever).start()

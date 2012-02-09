@@ -88,6 +88,13 @@ class Lock():
     def __init__(self):
         self._lock = threading.Lock()
         
+    def __enter__(self):
+        self.acquire()
+        return self
+    
+    def __exit__(self, *args):
+        self.release()
+        
     def acquire(self):
         #while self.locked(): time.sleep(self._rand.random())
         self._lock.acquire()
@@ -99,12 +106,12 @@ class Lock():
         
 
 def main():
-    print gen_libvirt_xml("test",
-                          "00-000-0000",
-                          256,
-                          1,
-                          "/home/peer/image/xp.img",
-                          "00:00:00:00:00:00")
+#    print gen_libvirt_xml("test",
+#                          "00-000-0000",
+#                          256,
+#                          1,
+#                          "/home/peer/image/xp.img",
+#                          "00:00:00:00:00:00")
     pass
     
 if __name__ == '__main__':

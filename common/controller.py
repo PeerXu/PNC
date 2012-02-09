@@ -22,7 +22,7 @@ class Controller(object):
 
     def methods(self):
         return self.__methods
-        
+
     def start(self):
         if self.__is_daemon:
             self.__daemonize()
