@@ -18,14 +18,14 @@ class NetConfig(models.Model):
     mac = models.CharField(max_length=255)
 
 class Volume(models.Model):
-    volume_id = models.CharField(max_length=255)
+    volume_id = models.CharField(max_length=255, unique=True)
     remote_dev = models.CharField(max_length=255)
     local_dev = models.CharField(max_length=255)
     local_dev_real = models.CharField(max_length=255)
     state_code = models.IntegerField(max_length=255)
 
 class Instance(models.Model):
-    instance_id = models.CharField(max_length=255)
+    instance_id = models.CharField(max_length=255, unique=True)
     image_id = models.CharField(max_length=255)
     image_url = models.CharField(max_length=255)
     kernel_id = models.CharField(max_length=255)
@@ -41,14 +41,25 @@ class Instance(models.Model):
 
 class Socket(models.Model):
     ip = models.CharField(max_length=255)
-    mac = models.CharField(max_length=255)
+    port = models.IntegerField(max_length=255)
 
 class Node(models.Model):
+    name = models.CharField(max_length=255, unique=True)
     config_max_disk = models.IntegerField(max_length=255)
     disk_max = models.IntegerField(max_length=255)
     config_max_mem = models.IntegerField(max_length=255)
     mem_max = models.IntegerField(max_length=255)
     config_max_cores = models.IntegerField(max_length=255)
     cores_max = models.IntegerField(max_length=255)
-    global_instances = models.ManyToManyField(Instance)
+    instances = models.ManyToManyField(Instance)
     socket = models.ForeignKey(Socket)
+
+class Cluster(models.Model):
+    name = models.CharField(max_length=255, unique=True)
+    nodes = models.ManyToManyField(Node)
+    socket = models.ForeignKey(Socket)
+
+class Cloud(models.Model):
+    name = models.CharField(max_length=255, unique=True)
+    clusters = models.ForeignKey(Cluster)
+    terminated_instances = models.ManyToManyField(Instance)

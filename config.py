@@ -87,7 +87,7 @@ STANDARD_XML = """
 # PATH
 #
 #HOME_PATH = "/home/cloud/PNC/"
-HOME_PATH = "/home/cloud/workspace/PNC/"
+HOME_PATH = "/home/peer/workspace/PNC/"
 
 TOOLS_PATH = HOME_PATH + "tools/"
 
@@ -136,4 +136,4 @@ NODE_MONITOR_INTERVAL = 5
 TEARDOWN_STATE_DURATION = 10 #180
 BOOTING_CLEANED_THRESHOLD = 10 #60 * 60 * 2
 
-NODE_PASSWD = "asd"
+NODE_PASSWD = "ji97ilkoa"

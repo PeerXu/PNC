@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import sys
-HOME = "/home/cloud/workspace/PNC/"
+HOME = "/home/peer/workspace/PNC/"
 sys.path.append(HOME)
 del sys
 

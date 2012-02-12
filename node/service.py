@@ -546,9 +546,9 @@ class Node(Controller):
                 
         return Result.new(0x0, 'terminate instance')
 
-    def do_describe_instances(self, inst_ids):
+    def do_describe_instances(self, inst_ids=None):
 
-        if not isinstance(inst_ids, list):
+        if inst_ids and not isinstance(inst_ids, list):
             self._logger.error("error arguments with: " + inst_ids)
             return Result.new(0xFFFF, {'msg': "error arguments"})
         
@@ -556,9 +556,12 @@ class Node(Controller):
         
         with self._inst_lock:
             #[rs.append(self._get_instance(inst_id)) for inst_id in inst_ids]
-            for inst_id in inst_ids:
-                inst = self._get_instance(inst_id)
-                inst and rs.append(inst)
+            if inst_ids == None:
+                [rs.append(inst) for inst in self._iter_global_instances()]
+            else:
+                for inst_id in inst_ids:
+                    inst = self._get_instance(inst_id)
+                    inst and rs.append(inst)
 
         return Result.new(0x0, {'msg': 'describe instances',
                                 'instances': rs})
