@@ -1,10 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from common import server
-from common import logger
 import os
 import sys
+import threading
+
+from common import server
+from common import logger
 
 class Controller(object):
     PREFIX = 'do_'
@@ -31,17 +33,17 @@ class Controller(object):
         
     def stop(self):
         self.__server.stop()
-        
-#    def info(self, msg, *args, **kwargs):
-#        self.__logger.info(msg, *args, **kwargs)
-#    def warning(self, msg, *args, **kwargs):
-#        self.__logger.warning(msg, *args, **kwargs)
-#    def error(self, msg, *args, **kwargs):
-#        self.__logger.error(msg, *args, **kwargs)
-#    def critical(self, msg, *args, **kwargs):
-#        self.__logger.critical(msg, *args, **kwargs)
-#    def debug(self, msg, *args, **kwargs):
-#        self.__logger.debug(msg, *args, **kwargs)        
+
+    def _startup_monitor_thread(self, *args, **kwargs):
+        self._logger.debug("invoked.")
+        self._monitor_thread = threading.Thread(target=self._thread_monitor, args=())
+        self._monitor_thread.setDaemon(True)
+        self._monitor_thread.start()
+
+    def _thread_monitor(self):
+        """
+        Overwrite me
+        """
         
     def __daemonize(self): 
         pid = os.fork()

@@ -114,6 +114,45 @@ class Instance:
         inst.user_id = user_id
 
         return inst
+
+class ClusterInstance(Instance):
+    node = None # ClusterResource
+    
+    def __init__(self, data={}):
+        if not data:
+            return
+        Instance.__init__(self, data)
+
+    @staticmethod
+    def new_instance(instance_id,
+                     reservation_id,
+                     params,
+                     image_id, image_url,
+                     kernel_id, kernel_url,
+                     ramdisk_id, ramdisk_url,
+                     state,
+                     net_config,
+                     user_id,
+                     node):
+        inst = ClusterInstance()
+
+        inst.instance_id = instance_id
+        inst.reservation_id = reservation_id
+        inst.params = params
+        inst.image_id = image_id
+        inst.image_url = image_url
+        inst.kernel_id = kernel_id
+        inst.kernel_url = kernel_url
+        inst.ramdisk_id = ramdisk_id
+        inst.ramdisk_url = ramdisk_url
+        inst.state_code = state
+        inst.net = net_config
+        inst.user_id = user_id
+        inst.node = node
+
+        return inst
+
+    
         
 class NodeResource:
     node_status = ""
@@ -156,6 +195,45 @@ class NodeResource:
         
         return res
 
+class ClusterResource(NodeResource):
+    uri = ""
+    name = ""
+    port = 0
+    
+    def __init__(self, data={}):
+        if not data:
+            return
+        NodeResource.__init__(self, data)
+        uri = data['uri']
+        name = data['name']
+        port = data['port']
+ 
+    @staticmethod
+    def new_instance(node_status,
+                     mem_size_max,
+                     mem_size_available,
+                     disk_size_max,
+                     disk_size_available,
+                     number_cores_max,
+                     number_cores_available,
+                     uri,
+                     name,
+                     port):
+        res = ClusterResource()
+
+        res.node_status = node_status
+        res.mem_size_max = mem_size_max
+        res.mem_size_available = mem_size_available
+        res.disk_size_max = disk_size_max
+        res.disk_size_available = disk_size_available
+        res.number_cores_max = number_cores_max
+        res.number_cores_available = number_cores_available
+        res.uri = uri
+        res.name = name
+        res.port = port
+
+        return res
+
 class NodeDetail:
     uri = ""
     vir_conn = None
@@ -178,8 +256,28 @@ class NodeDetail:
         self.mem_max = data["mem_max"]
         self.cores_max = data["cores_max"]
 
+class ClusterDetail:
+    cc_res = [] # list: ClusterResource
+    cc_inst = [] # list: ClusterInstance
+    config_max_disk = 0
+    config_max_mem = 0
+    config_max_cores = 0
+    disk_max = 0
+    mem_max = 0 
+    cores_max = 0
+
+    def __init__(self, data={}):
+        if not data:
+            return
+        self.config_max_disk = data['config_max_disk']
+        self.config_max_mem = data['config_max_mem']
+        self.config_max_cores = data['config_max_cores']
+        self.disk_max = data['disk_max']
+        self.mem_max = data['mem_max']
+        self.cores_max = data['cores_max']
+
 class Result:
-    code = 0xFFFFFFFF
+    code = 0xFFFF
     data = None
     
     def __init__(self, data={}):

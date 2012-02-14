@@ -30,8 +30,6 @@ class Node(Controller):
         self._inst_lock = None
         self._res_lock = None
         
-        self._monitor_thread = None
-        
     def _init_node(self):
         # check node is _initialized
         if self._initialized > 0:
@@ -57,8 +55,6 @@ class Node(Controller):
         self._adopt_instances()
 
         # startup monitor thread
-        self._monitor_thread = threading.Thread(target=self._thread_monitor, args=())
-        self._monitor_thread.setDaemon(True)
         self._startup_monitor_thread()
 
         # _init_node done. set self._initialized to 1
@@ -93,7 +89,7 @@ class Node(Controller):
         self._logger.info("add iptable rule.")
         
     def stop(self):
-        self._logger.debug("invoked")
+        self._logger.info("invoked")
         super(Node, self).stop()
         self._logger.debug("done")
         return Result.new(0x0, "stop service")
@@ -144,11 +140,6 @@ class Node(Controller):
                 self._logger.error("Failed to connect libvirt")
                 return None
         return self._nc_detail.vir_conn
-
-    def _startup_monitor_thread(self):
-        self._logger.debug("invoked.")
-
-        self._monitor_thread.start()
 
     def _thread_monitor(self):
         self._logger.debug("invoked.")

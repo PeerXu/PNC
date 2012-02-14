@@ -84,25 +84,32 @@ def mac_generator(slat):
     return config.INSTANCE_MAC_PREFIX + ":" + str(tmp[0:2]) + ":" + str(tmp[2:4]) + ":" + str(tmp[4:6])
 
 class Lock():
-    #_rand = random.Random()
     def __init__(self):
         self._lock = threading.Lock()
-        
     def __enter__(self):
         self.acquire()
         return self
-    
     def __exit__(self, *args):
         self.release()
-        
     def acquire(self):
-        #while self.locked(): time.sleep(self._rand.random())
         self._lock.acquire()
     def release(self):
         self._lock.release()
     def locked(self):
         return self._lock.locked()
 
+class Semaphore():
+    def __init__(self, max_sem=1):
+        self._sem = threading.BoundedSemaphore(max_sem)
+    def __enter__(self):
+        self.acquire()
+        return self
+    def __exit__(self, *args):
+        self.release()
+    def acquire(self):
+        self._sem.acquire()
+    def release(self):
+        self._sem.release()
         
 
 def main():

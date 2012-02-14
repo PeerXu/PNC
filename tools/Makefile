@@ -1,7 +1,7 @@
 BIN=get_sys_info startup_node startup_cluster populate_arp
 
 DEST=/usr/sbin
-SRC=/home/peer/workspace/PNC/tools
+SRC=/home/cloud/workspace/PNC/tools
 
 LN=ln
 LFLAGS=-s

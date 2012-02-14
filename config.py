@@ -57,37 +57,12 @@ STANDARD_XML = """
   </devices>
 </domain>
 """
-#"""<domain type='kvm'>
-#    <name>{{ NAME }}</name>
-#  <uuid>{{ UUID }}</uuid>
-#  <memory>{{ MEMORY }}</memory>
-#  <currentMemory>{{ CURRENTMEMORY }}</currentMemory>
-#  <vcpu>{{ VCPU }}</vcpu>
-#  <os>
-#    <type arch="i686">hvm</type>
-#  </os>
-#  <clock sync="localtime"/>
-#  <devices>
-#    <emulator>/usr/bin/qemu-kvm</emulator>
-#    <disk type='file' device='disk'>
-#      <source file='{{ DISK_SOURCE_FILE }}'/>
-#      <target dev='{{ DISK_TARGET_DEV }}'/>
-#    </disk>
-#    <interface type='network'>
-#      <source network='default'/>
-#      <mac address='{{ MAC_ADDRESS }}'/>
-#    </interface>
-#    <graphics type='vnc' port='-1' keymap='de'/>
-#  </devices>
-#</domain>"""
-
-
 
 #
 # PATH
 #
-#HOME_PATH = "/home/cloud/PNC/"
-HOME_PATH = "/home/peer/workspace/PNC/"
+HOME_PATH = "/home/cloud/workspace/PNC/"
+#HOME_PATH = "/home/peer/workspace/PNC/"
 
 TOOLS_PATH = HOME_PATH + "tools/"
 
@@ -121,6 +96,8 @@ NODE_LOG = LOG_PATH + "node.log"
 
 CLUSTER_ADDR = ('localhost', 18002)
 
+NC_CALL_MAX = 4
+
 #
 # NODE
 #
@@ -136,4 +113,4 @@ NODE_MONITOR_INTERVAL = 5
 TEARDOWN_STATE_DURATION = 10 #180
 BOOTING_CLEANED_THRESHOLD = 10 #60 * 60 * 2
 
-NODE_PASSWD = "ji97ilkoa"
+NODE_PASSWD = "asd"
