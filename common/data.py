@@ -257,25 +257,15 @@ class NodeDetail:
         self.cores_max = data["cores_max"]
 
 class ClusterDetail:
-    cc_res = [] # list: ClusterResource
-    cc_inst = [] # list: ClusterInstance
-    config_max_disk = 0
-    config_max_mem = 0
-    config_max_cores = 0
-    disk_max = 0
-    mem_max = 0 
-    cores_max = 0
-
+    sched_policy = "DEFAULT"
+    sched_state = 0
+    
     def __init__(self, data={}):
         if not data:
             return
-        self.config_max_disk = data['config_max_disk']
-        self.config_max_mem = data['config_max_mem']
-        self.config_max_cores = data['config_max_cores']
-        self.disk_max = data['disk_max']
-        self.mem_max = data['mem_max']
-        self.cores_max = data['cores_max']
-
+        sched_policy = data['sched_policy']
+        sched_state = data['sched_state']
+    
 class Result:
     code = 0xFFFF
     data = None

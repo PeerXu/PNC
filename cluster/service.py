@@ -9,7 +9,8 @@ import threading
 import config
 from common.controller import Controller
 from common import utils
-from common.data import ClusterDetail
+from common.data import ClusterDetail, ClusterResource, ClusterInstance
+
 
 class Cluster(Controller):
     ADDR = config.CLUSTER_ADDR
@@ -25,7 +26,21 @@ class Cluster(Controller):
         self._nccall_sem = None
 
     def _init_cluster(self):
-        pass
+        if self._initialized > 0:
+            return 0
+        elif self._initialized < 0:
+            return -1
+        
+        # startup to initialize
+        self._initialized = -1
+
+        self._cc_resources = [] # data.ClusterResource
+        self._cc_instances = [] # data.ClusterInstance
+        self._cc_detail = ClusterDetail()
+        
+        self._inst_lock = utils.Lock()
+        self._res_lock = utils.Lock()
+        self._nccall_sem = utils.Semaphore(config.NC_CALL_MAX)
 
     def start(self):
         self._logger.info("initialize cluster detail")
