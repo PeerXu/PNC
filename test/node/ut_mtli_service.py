@@ -1,8 +1,3 @@
-'''
-Created on 2012-1-16
-
-@author: peer
-'''
 import unittest
 import random
 import config

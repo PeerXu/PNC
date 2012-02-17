@@ -9,9 +9,6 @@ del sys
 from cluster import service
 
 def main():
-    
-    import pdb; pdb.set_trace()
-
     print 'initialize cluster service...'
     server = service.Cluster(False)
     server.self_register()

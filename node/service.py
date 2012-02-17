@@ -144,6 +144,7 @@ class Node(Controller):
     def _thread_monitor(self):
         self._logger.debug("invoked.")
         while True:
+            self._logger.debug("wake up")
             now = time.time()            
             self._logger.debug("monitor thread running...")
             self._inst_lock.acquire()
@@ -178,6 +179,7 @@ class Node(Controller):
                 inst.termination_time = time.time()
                                 
             self._inst_lock.release()
+            slef._logger.debug("sleep")
             time.sleep(config.NODE_MONITOR_INTERVAL)
             
     def _add_instance(self, inst):        
@@ -619,9 +621,9 @@ class Node(Controller):
         for inst in self._iter_global_instances():
             if inst.state_code == InstanceState.TEARDOWN:
                 continue
-            sum_cores = sum_cores + inst.params.cores
-            sum_mem = sum_mem + inst.params.mem
-            sum_disk = sum_disk + inst.params.disk
+            sum_cores += inst.params.cores
+            sum_mem += inst.params.mem
+            sum_disk += inst.params.disk
             
         cores_free = self._nc_detail.config_max_cores - sum_cores
         if cores_free < 0:
