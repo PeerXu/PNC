@@ -195,7 +195,7 @@ class Node(Controller):
         idx = self._has_instance(instance_id)
         if idx == -1:
             return
-        self._global_instances.remove(self._global_instances[idx])
+        del self._global_instances[idx]
         self._logger.debug("remove instance %s" % (instance_id,))
 
     def _global_instances_size(self):

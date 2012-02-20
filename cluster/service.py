@@ -72,6 +72,38 @@ class Cluster(Controller):
         self._logger.debug("done")
         return Result.new(0x0, "stop service")
 
+    def _instances_size(self):
+        return len(self._cc_instances)
+
+    def _has_instance(self, inst_id):
+        for i in xrange(self._instances_size()):
+            if self._cc_instances[i].id == inst_id:
+                return i
+        return -1
+
+    def _iter_instance(self):
+        return iter(self._cc_instances)
+
+    def _get_instance(self, inst_id):
+        idx = self._has_instance(inst_id)
+        if idx == -1:
+            return None
+        return self._cc_instances[idx]
+
+    def _add_instance(self, inst):
+        if self._has_instance(inst.id) != -1:
+            self._logger.warn('instance %s already exists' % (inst.id,))
+            return
+        self._cc_instances.append(inst)
+        self._logger.debug('add instance %s' % (inst.id,))
+
+    def _remove_instance(self, inst_id):
+        idx = self._has_instance(inst_id)
+        if idx == -1:
+            return
+        del self._cc_instances[idx]
+        self._logger.debug('remove instance %s' % (inst_id,))
+
     def _thread_monitor(self):
         self._logger.debug("invoked.")
         while True:
@@ -84,7 +116,7 @@ class Cluster(Controller):
 
     def _has_node(self, nid):
         for i in xrange(self._nodes_size()):
-            if self._cc_resources.id == nid:
+            if self._cc_resources[i].id == nid:
                 return i
         return -1
     
@@ -99,18 +131,40 @@ class Cluster(Controller):
     
     def _add_node(self, node_res):
         if self._has_node(node_res.id) != -1:
-            self._logger.warn('failed to add node %s, %s in node list' % (node_res.id, node_res.id))
+            self._logger.warn('node %s already exists' % (node_res.id,))
             return
-        
         self._cc_resources.append(node_res)
-        self._logger('add node %s' % (node_res.id,))
+        self._logger.debug('add node %s' % (node_res.id,))
 
     def _remove_node(self, nid):
         idx = self._has_node(nid)
         if idx == -1:
             return
-        self._cc_resources.remove(self._cc_resources[idx])
+        del self._cc_resources[idx]
         self._logger.debug('remove node %s' % (nid,))
+
+    def _add_node_thread(self, nid, ip, port):
+        node = utils.get_conctrller_object(utils.uri_generator(ip, port))
+        with self._nccall_sem:
+            rs = node.do_describe_resource()
+            if rs.code != 0x0:
+                self._logger.warn(res.data['msg'])
+                return
+
+        res_data = rs.data
+        res_data.update({'uri': uri_generator(ip, port),
+                         'id': nid})
+        res = ClusterResource(rs.data)
+
+        with self._res_lock:
+            if self._has_node(nid) != -1:
+                self._logger.warn("already exists node %s" % (nid,))
+                return
+            self._add_node(res)
+            self._logger.info("add node %s" % (nid,))
+        
+    def _startup_add_node_thread(self, nid, ip, port):
+        threading.Thread(target=self._add_node_thread, args=(nid, ip, port)).start()
 
     def do_add_node(self, nid, ip, port):
         self._logger.info('invoked')
@@ -125,24 +179,7 @@ class Cluster(Controller):
         self._logger.debug('done')
         return Result.new(0x0, {'msg': 'add node %s' % (nid,)})
 
-    def _add_node_thread(self, nid, ip, port):
-        node = utils.get_conctrller_object(utils.uri_generator(ip, port))
-        with self._nccall_sem:
-            res = node.do_describe_resource()
-            if res.code != 0x0:
-                self._logger.warn(res.data['msg'])
-                return
-
-                                       
-            
-            
-        
-
-    def _startup_add_node_thread(self, nid, ip, port):
-        threading.Thread(target=self._add_node_thread, args=(nid, ip, port)).start()
-            
-
-    def do_remove_node(self):
+    def do_remove_node(self, nid, force=False):
         return Result.new(0x0, "remove node")
 
     def do_power_down(self):
