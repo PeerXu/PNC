@@ -180,6 +180,7 @@ class Cluster(Controller):
         return Result.new(0x0, {'msg': 'add node %s' % (nid,)})
 
     def do_remove_node(self, nid, force=False):
+        
         return Result.new(0x0, "remove node")
 
     def do_power_down(self):
