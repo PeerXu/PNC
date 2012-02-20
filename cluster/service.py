@@ -144,6 +144,7 @@ class Cluster(Controller):
         self._logger.debug('remove node %s' % (nid,))
 
     def _add_node_thread(self, nid, ip, port):
+        self._logger.debug('invoked')
         node = utils.get_conctrller_object(utils.uri_generator(ip, port))
         with self._nccall_sem:
             rs = node.do_describe_resource()
@@ -162,13 +163,15 @@ class Cluster(Controller):
                 return
             self._add_node(res)
             self._logger.info("add node %s" % (nid,))
+        self._logger.debug('done')
         
     def _startup_add_node_thread(self, nid, ip, port):
+        self._logger.debug('invoked')
         threading.Thread(target=self._add_node_thread, args=(nid, ip, port)).start()
+        self._logger.debug('done')
 
     def do_add_node(self, nid, ip, port):
         self._logger.info('invoked')
-
         with self._res_lock:
             # node is already in cluster?
             if self._has_node(nid) == -1:
@@ -179,8 +182,28 @@ class Cluster(Controller):
         self._logger.debug('done')
         return Result.new(0x0, {'msg': 'add node %s' % (nid,)})
 
+    def _vm_exist_on_node(self, nid):
+        self._logger.debug('invoked')
+        self._logger.debug('done')
+
+    def _terminate_instances(self, inst_ids):
+        self._logger.debug('invoked')
+        self._logger.debug('done')
+
+
     def do_remove_node(self, nid, force=False):
-        
+        self._logger.info('invoked')
+        if self._has_node(nid) == -1:
+            self._logger.warn('node %s is not exists' % (nid,))
+            return
+        if not force:
+            if self._vm_exist_on_node(nid):
+                self._logger.warn('failed to remove node %s, some vm running on node %s' % (nid, nid))
+                return Result.new(0xFFFF, 'failed to remove node %s' % (nid,))
+        else:
+            
+            
+        self._logger.debug('done')
         return Result.new(0x0, "remove node")
 
     def do_power_down(self):
