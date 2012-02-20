@@ -5,12 +5,12 @@ import sys
 import commands
 import time
 import threading
+import socket
 
 import config
 from common.controller import Controller
 from common import utils
 from common.data import ClusterDetail, ClusterResource, ClusterInstance
-
 
 class Cluster(Controller):
     ADDR = config.CLUSTER_ADDR
@@ -79,8 +79,68 @@ class Cluster(Controller):
             self._logger.debug("sleep")
             time.sleep(config.CLUSTER_MONITOR_INTERVAL)
 
-    def do_add_node(self):
-        return Result.new(0x0, "add node")
+    def _nodes_size(self):
+        return len(self._cc_resources)
+
+    def _has_node(self, nid):
+        for i in xrange(self._nodes_size()):
+            if self._cc_resources.id == nid:
+                return i
+        return -1
+    
+    def _iter_node(self):
+        return iter(self._cc_resources)
+
+    def _get_node(self, nid):
+        idx = self._has_node(nid)
+        if idx == -1:
+            return None
+        return self._cc_resources[idx]
+    
+    def _add_node(self, node_res):
+        if self._has_node(node_res.id) != -1:
+            self._logger.warn('failed to add node %s, %s in node list' % (node_res.id, node_res.id))
+            return
+        
+        self._cc_resources.append(node_res)
+        self._logger('add node %s' % (node_res.id,))
+
+    def _remove_node(self, nid):
+        idx = self._has_node(nid)
+        if idx == -1:
+            return
+        self._cc_resources.remove(self._cc_resources[idx])
+        self._logger.debug('remove node %s' % (nid,))
+
+    def do_add_node(self, nid, ip, port):
+        self._logger.info('invoked')
+
+        with self._res_lock:
+            # node is already in cluster?
+            if self._has_node(nid) == -1:
+                self._logger.warn('failed to add node %s, %s in node list' % (nid, nid))
+                return Result.new(0xFFFF, {'msg': 'failed to add node %s' % (nid,)})
+            
+            self._startup_add_node_thread(nid)
+        self._logger.debug('done')
+        return Result.new(0x0, {'msg': 'add node %s' % (nid,)})
+
+    def _add_node_thread(self, nid, ip, port):
+        node = utils.get_conctrller_object(utils.uri_generator(ip, port))
+        with self._nccall_sem:
+            res = node.do_describe_resource()
+            if res.code != 0x0:
+                self._logger.warn(res.data['msg'])
+                return
+
+                                       
+            
+            
+        
+
+    def _startup_add_node_thread(self, nid, ip, port):
+        threading.Thread(target=self._add_node_thread, args=(nid, ip, port)).start()
+            
 
     def do_remove_node(self):
         return Result.new(0x0, "remove node")

@@ -197,16 +197,14 @@ class NodeResource:
 
 class ClusterResource(NodeResource):
     uri = ""
-    name = ""
-    port = 0
+    id = ""
     
     def __init__(self, data={}):
         if not data:
             return
         NodeResource.__init__(self, data)
         uri = data['uri']
-        name = data['name']
-        port = data['port']
+        id = data['id']
  
     @staticmethod
     def new_instance(node_status,
@@ -217,8 +215,7 @@ class ClusterResource(NodeResource):
                      number_cores_max,
                      number_cores_available,
                      uri,
-                     name,
-                     port):
+                     id):
         res = ClusterResource()
 
         res.node_status = node_status
@@ -229,8 +226,7 @@ class ClusterResource(NodeResource):
         res.number_cores_max = number_cores_max
         res.number_cores_available = number_cores_available
         res.uri = uri
-        res.name = name
-        res.port = port
+        res.id = id
 
         return res
 
@@ -257,6 +253,7 @@ class NodeDetail:
         self.cores_max = data["cores_max"]
 
 class ClusterDetail:
+    uri = ""
     sched_policy = "DEFAULT"
     sched_state = 0
     config_max_disk = 0
@@ -367,4 +364,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-

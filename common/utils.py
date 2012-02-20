@@ -5,6 +5,7 @@ import threading
 import re
 import time
 import hashlib
+import xmlrpclib
 
 import config
 
@@ -82,6 +83,13 @@ def mac_generator(slat):
     tmp = m.hexdigest()
     tmp = tmp[:6]
     return config.INSTANCE_MAC_PREFIX + ":" + str(tmp[0:2]) + ":" + str(tmp[2:4]) + ":" + str(tmp[4:6])
+
+def uri_generator(ip, port):
+    return "http://%s:%d" % (ip, port)
+
+def get_conctrller_object(uri):
+    return xmlrpclib.ServerProxy(uri, allow_none=True)
+    
 
 class Lock():
     def __init__(self):
