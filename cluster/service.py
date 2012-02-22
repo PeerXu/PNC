@@ -190,20 +190,34 @@ class Cluster(Controller):
         self._logger.debug('invoked')
         self._logger.debug('done')
 
+    def _get_instances_from_nc(self, nid):
+        self._logger.debug('invoked')
+        inst_instances = []
+        [insts.append(inst) for inst in self._iter_node() if inst.node.id == nid]
+        self._logger.debug('done')
+        return inst_instances
 
     def do_remove_node(self, nid, force=False):
         self._logger.info('invoked')
         with self._res_lock:
             if self._has_node(nid) == -1:
                 self._logger.warn('node %s is not exists' % (nid,))
-                return
+                return Result.new(0xFFFF, 'failed to remove node %s' % (nid,))
             if not force:
                 if self._vm_exist_on_node(nid):
                     self._logger.warn('failed to remove node %s, some vm running on node %s' % (nid, nid))
                     return Result.new(0xFFFF, 'failed to remove node %s' % (nid,))
             else:
-                # unimplement
-                pass
+                inst_instances = self._get_instances_from_nc(nid)
+                node = self._get_node()
+                node_server = utils.get_conctrller_object(node.uri)
+                for inst in inst_instances:
+                    try:
+                        ret = node_server.do_terminate_instance(inst.id)
+                    except:
+                        self._logger.warn('failed to terminate instance %s' % (inst.id))
+            # start remove node
+            
             
             
         self._logger.debug('done')
