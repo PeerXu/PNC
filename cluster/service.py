@@ -174,7 +174,7 @@ class Cluster(Controller):
         self._logger.info('invoked')
         with self._res_lock:
             # node is already in cluster?
-            if self._has_node(nid) == -1:
+            if self._has_node(nid) != -1:
                 self._logger.warn('failed to add node %s, %s in node list' % (nid, nid))
                 return Result.new(0xFFFF, {'msg': 'failed to add node %s' % (nid,)})
             
@@ -193,14 +193,17 @@ class Cluster(Controller):
 
     def do_remove_node(self, nid, force=False):
         self._logger.info('invoked')
-        if self._has_node(nid) == -1:
-            self._logger.warn('node %s is not exists' % (nid,))
-            return
-        if not force:
-            if self._vm_exist_on_node(nid):
-                self._logger.warn('failed to remove node %s, some vm running on node %s' % (nid, nid))
-                return Result.new(0xFFFF, 'failed to remove node %s' % (nid,))
-        else:
+        with self._res_lock:
+            if self._has_node(nid) == -1:
+                self._logger.warn('node %s is not exists' % (nid,))
+                return
+            if not force:
+                if self._vm_exist_on_node(nid):
+                    self._logger.warn('failed to remove node %s, some vm running on node %s' % (nid, nid))
+                    return Result.new(0xFFFF, 'failed to remove node %s' % (nid,))
+            else:
+                # unimplement
+                pass
             
             
         self._logger.debug('done')

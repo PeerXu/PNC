@@ -293,7 +293,7 @@ class ClusterDetail:
         cd.config_max_cores = config_max_cores
         cd.disk_max = disk_max
         cd.mem_max = mem_max
-        dc.cores_max = cores_max
+        cd.cores_max = cores_max
 
         return cd
     
