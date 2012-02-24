@@ -193,17 +193,18 @@ class Cluster(Controller):
         self._logger.debug('invoked')
         self._logger.debug('done')
 
-    #unimplement
-    def _get_instance_on_node(self, nid):
-        self._logger.debug('invoked')
-        self._logger.debug('done')
-        return []
-
     def _startup_terminate_instances(self, inst_ids):
         thread = utils.ResultThread(self.do_terminate_instances, inst_ids)
         thread.start()
         thread.join()
         return thread.result
+
+    def _get_instances_on_node(self, nid):
+        self._logger.debug('invoked')
+        inst_instances = []
+        [insts.append(inst) for inst in self._iter_node() if inst.node.id == nid]
+        self._logger.debug('done')
+        return inst_instances
 
     def do_remove_node(self, nid, force=False):
         self._logger.info('invoked')
