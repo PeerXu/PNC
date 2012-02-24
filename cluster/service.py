@@ -10,7 +10,7 @@ import socket
 import config
 from common.controller import Controller
 from common import utils
-from common.data import ClusterDetail, ClusterResource, ClusterInstance
+from common.data import ClusterDetail, ClusterResource, ClusterInstance, Result
 
 class Cluster(Controller):
     ADDR = config.CLUSTER_ADDR
@@ -147,15 +147,19 @@ class Cluster(Controller):
         self._logger.debug('invoked')
         node = utils.get_conctrller_object(utils.uri_generator(ip, port))
         with self._nccall_sem:
-            rs = node.do_describe_resource()
-            if rs.code != 0x0:
-                self._logger.warn(res.data['msg'])
+            try:
+                rs = node.do_describe_resource()
+                if rs['code'] != 0x0:
+                    self._logger.warn(rs.data['msg'])
+                    return
+            except Exception, err:
+                self._logger.warn(err)
                 return
 
-        res_data = rs.data
-        res_data.update({'uri': uri_generator(ip, port),
+        res_data = rs['data']
+        res_data.update({'uri': utils.uri_generator(ip, port),
                          'id': nid})
-        res = ClusterResource(rs.data)
+        res = ClusterResource(rs['data'])
 
         with self._res_lock:
             if self._has_node(nid) != -1:
@@ -178,7 +182,7 @@ class Cluster(Controller):
                 self._logger.warn('failed to add node %s, %s in node list' % (nid, nid))
                 return Result.new(0xFFFF, {'msg': 'failed to add node %s' % (nid,)})
             
-            self._startup_add_node_thread(nid)
+            self._startup_add_node_thread(nid, ip, port)
         self._logger.debug('done')
         return Result.new(0x0, {'msg': 'add node %s' % (nid,)})
 
@@ -202,7 +206,7 @@ class Cluster(Controller):
     def _get_instances_on_node(self, nid):
         self._logger.debug('invoked')
         inst_instances = []
-        [insts.append(inst) for inst in self._iter_node() if inst.node.id == nid]
+        [inst_instances.append(inst) for inst in self._iter_node() if inst.node.id == nid]
         self._logger.debug('done')
         return inst_instances
 
@@ -219,22 +223,22 @@ class Cluster(Controller):
             else:
                 # if force is true, find all instance which is running on node
                 insts = self._get_instance_on_node(nid)
-                inst_ids = [inst.instance_id in inst for insts]
-
-
-        with self._nccall_sem:
-            self._logger.info('terminate instances:', inst_ids)
-            ret = self._startup_terminate_instances(inst_ids)
-            if ret.code != 0x0:
-                self._logger.error('failed to remove node %s, terminate vm failed' % (nid,))
-                return Result.new(0xFFFF, 'failed to remove node %s' % (nid,))
+                inst_ids = [inst.instance_id for inst in insts]
+        
+        if force:
+            with self._nccall_sem:
+                self._logger.info('terminate instances:', inst_ids)
+                ret = self._startup_terminate_instances(inst_ids)
+                if ret.code != 0x0:
+                    self._logger.error('failed to remove node %s, terminate vm failed' % (nid,))
+                    return Result.new(0xFFFF, 'failed to remove node %s' % (nid,))
 
         with self._res_lock:
             self._logger.info('remove node %s' % nid)
             self._remove_node(nid)
             
         self._logger.debug('done')
-        return Result.new(0x0, "remove node")
+        return Result.new(0x0, "remove node %s" % nid)
 
     def do_power_down(self):
         return Result.new(0x0, "power down")

@@ -202,9 +202,9 @@ class ClusterResource(NodeResource):
     def __init__(self, data={}):
         if not data:
             return
-        NodeResource.__init__(self, data)
-        uri = data['uri']
-        id = data['id']
+        NodeResource.__init__(self, data['resource'])
+        self.uri = data['uri']
+        self.id = data['id']
  
     @staticmethod
     def new_instance(node_status,

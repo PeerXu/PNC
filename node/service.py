@@ -179,7 +179,7 @@ class Node(Controller):
                 inst.termination_time = time.time()
                                 
             self._inst_lock.release()
-            slef._logger.debug("sleep")
+            self._logger.debug("sleep")
             time.sleep(config.NODE_MONITOR_INTERVAL)
             
     def _add_instance(self, inst):        
