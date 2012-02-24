@@ -182,29 +182,55 @@ class Cluster(Controller):
         self._logger.debug('done')
         return Result.new(0x0, {'msg': 'add node %s' % (nid,)})
 
+    #unimplement
     def _vm_exist_on_node(self, nid):
         self._logger.debug('invoked')
         self._logger.debug('done')
+        return False
 
+    #unimplement
     def _terminate_instances(self, inst_ids):
         self._logger.debug('invoked')
         self._logger.debug('done')
 
+    #unimplement
+    def _get_instance_on_node(self, nid):
+        self._logger.debug('invoked')
+        self._logger.debug('done')
+        return []
+
+    def _startup_terminate_instances(self, inst_ids):
+        thread = utils.ResultThread(self.do_terminate_instances, inst_ids)
+        thread.start()
+        thread.join()
+        return thread.result
 
     def do_remove_node(self, nid, force=False):
         self._logger.info('invoked')
         with self._res_lock:
             if self._has_node(nid) == -1:
                 self._logger.warn('node %s is not exists' % (nid,))
-                return
+                return Result.new(0xFFFF, 'failed to remove node %s' % (nid,))
             if not force:
                 if self._vm_exist_on_node(nid):
                     self._logger.warn('failed to remove node %s, some vm running on node %s' % (nid, nid))
                     return Result.new(0xFFFF, 'failed to remove node %s' % (nid,))
             else:
-                # unimplement
-                pass
-            
+                # if force is true, find all instance which is running on node
+                insts = self._get_instance_on_node(nid)
+                inst_ids = [inst.instance_id in inst for insts]
+
+
+        with self._nccall_sem:
+            self._logger.info('terminate instances:', inst_ids)
+            ret = self._startup_terminate_instances(inst_ids)
+            if ret.code != 0x0:
+                self._logger.error('failed to remove node %s, terminate vm failed' % (nid,))
+                return Result.new(0xFFFF, 'failed to remove node %s' % (nid,))
+
+        with self._res_lock:
+            self._logger.info('remove node %s' % nid)
+            self._remove_node(nid)
             
         self._logger.debug('done')
         return Result.new(0x0, "remove node")

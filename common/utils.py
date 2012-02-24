@@ -118,7 +118,21 @@ class Semaphore():
         self._sem.acquire()
     def release(self):
         self._sem.release()
-        
+
+class ResultThread(threading.Thread):
+    def __init__(self, func, *args, **kwargs):
+        self.func = func
+        self.args = args
+        self.kwargs = kwargs
+        self.run_time = 0
+        self.result = None
+        self.is_done = False
+
+    def run(self):
+        now = time.time()
+        self.result = self.func(*self.args, **self.kwargs)
+        self.run_time = time.time() - now
+        self.is_done = True
 
 def main():
 #    print gen_libvirt_xml("test",
