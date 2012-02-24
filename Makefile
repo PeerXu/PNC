@@ -4,8 +4,6 @@ TAGS=$(ETAGS) $(GTAGS)
 
 RM=rm -rf
 
-
-
 tags:
 	find . -name "*.py" | xargs etags -a
 	gtags

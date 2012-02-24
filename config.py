@@ -61,8 +61,7 @@ STANDARD_XML = """
 #
 # PATH
 #
-HOME_PATH = "/home/cloud/workspace/PNC/"
-#HOME_PATH = "/home/peer/workspace/PNC/"
+HOME_PATH = "/home/peer/PNC/"
 
 TOOLS_PATH = HOME_PATH + "tools/"
 
