@@ -186,18 +186,21 @@ class Cluster(Controller):
         self._logger.debug('done')
         return Result.new(0x0, {'msg': 'add node %s' % (nid,)})
 
-    #unimplement
     def _vm_exist_on_node(self, nid):
         self._logger.debug('invoked')
+        for inst in self._iter_instance():
+            if inst.node.id == nid:
+                return
         self._logger.debug('done')
         return False
 
-    #unimplement
-    def _terminate_instances(self, inst_ids):
-        self._logger.debug('invoked')
-        self._logger.debug('done')
+#    #unimplement
+#    def _terminate_instances(self, inst_ids):
+#        self._logger.debug('invoked')
+#        self._logger.debug('done')
 
     def _startup_terminate_instances(self, inst_ids):
+        # what a BAICHI action!!!
         thread = utils.ResultThread(self.do_terminate_instances, inst_ids)
         thread.start()
         thread.join()
