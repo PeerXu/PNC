@@ -252,7 +252,14 @@ class Cluster(Controller):
     def do_describe_instances(self):
         return Result.new(0x0, "describe instances")
 
-    def do_run_instances(self):
+    def do_run_instances(self,
+                         instance_ids,
+                         params_t,
+                         image_id, image_url,
+                         kernel_id, kernel_url,
+                         ramdisk_id, ramdisk_url,
+                         mac_addrs,
+                         target_node=None):
         return Result.new(0x0, "run instances")
 
     def do_reboot_instances(self):
