@@ -33,6 +33,12 @@ class NetConfig:
             return 
         self.ip = data["ip"]
         self.mac = data["mac"]
+    
+    def new_instance(ip=None, mac=None):
+        net = NetConfig()
+        net.ip = ip and net.ip
+        net.mac = mac and net.mac
+        return net
 
 class Volume:
     volume_id = ""

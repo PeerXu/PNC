@@ -2,10 +2,8 @@
 # -*- coding: utf-8 -*-
 
 import sys
-import commands
 import time
 import threading
-import socket
 
 import config
 from common.controller import Controller
@@ -186,7 +184,7 @@ class Cluster(Controller):
         self._logger.debug('done')
         return Result.new(0x0, {'msg': 'add node %s' % (nid,)})
 
-    def _vm_exist_on_node(self, nid):
+    def _instance_on_node(self, nid):
         self._logger.debug('invoked')
         for inst in self._iter_instance():
             if inst.node.id == nid:
@@ -212,7 +210,7 @@ class Cluster(Controller):
         [inst_instances.append(inst) for inst in self._iter_node() if inst.node.id == nid]
         self._logger.debug('done')
         return inst_instances
-
+n
     def do_remove_node(self, nid, force=False):
         self._logger.info('invoked')
         with self._res_lock:
@@ -220,7 +218,7 @@ class Cluster(Controller):
                 self._logger.warn('node %s is not exists' % (nid,))
                 return Result.new(0xFFFF, 'failed to remove node %s' % (nid,))
             if not force:
-                if self._vm_exist_on_node(nid):
+                if self._instance_exist_on_node(nid):
                     self._logger.warn('failed to remove node %s, some vm running on node %s' % (nid, nid))
                     return Result.new(0xFFFF, 'failed to remove node %s' % (nid,))
             else:
@@ -252,14 +250,150 @@ class Cluster(Controller):
     def do_describe_instances(self):
         return Result.new(0x0, "describe instances")
 
-    def do_run_instances(self,
+    def _schedule_instance(self, param, target_node_id=None):
+        if target_node_id == None:
+            policy = "explicit"
+        else:
+            policy = config.CLUSTER_DEFAULT_SCHEDULE_POLITY
+
+        try:
+            return getattr(self, '_schedule_instance_' + policy)(param, target_node_id)
+        except:
+            self._logger.critical('instance schedule function not found, please fix config')
+            sys.exit(255)
+
+    def _schedule_instance_greed(self, param, _=None):
+        assert False
+        return 0
+    
+    def _schedule_instance_explicit(self, param, target_node):
+        assert False
+        return 0
+
+    def _run_instance_thread(self, 
+                             instance_id,
+                             reservation_id,
+                             param_t,
+                             image_id, image_url,
+                             kernel_id, kernel_url,
+                             ramdisk_id, ramdisk_url,
+                             net_config,
+                             user_id,
+                             target_node_id):
+        self._logger.debug('invoked')
+
+        res = self._get_node(target_node_id)
+        node_server = utils.get_conctrller_object(res.uri)
+
+        start_time = time.time()
+        res = Result()
+        while res.code and (time.time() - start_time < config.CLUSTER_WAKE_THRESH):
+            res = node_server.do_run_instance(instance_id,
+                                              reservation_id,
+                                              param_t,
+                                              image_id, image_url,
+                                              kernel_id, kernel_url,
+                                              ramdisk_id, ramdisk_url,
+                                              net_config,
+                                              user_id)
+            if res.code:
+                time.sleep(1)
+        
+        if res.code:
+            self._logger.warn('failed to run instance: %s' % instance_id)
+            return 1
+
+        inst = ClusterInstance.new_instance(instance_id,
+                                            reservation_id,
+                                            param_t,
+                                            image_id, image_url,
+                                            kernel_id, kernel_url,
+                                            ramdisk_id, ramdisk_url,
+                                            InstanceState.PENDING,
+                                            net_config,
+                                            user_id,
+                                            self._get_node(target_node_id))
+
+        with self._inst_lock:
+            self._add_instance(inst)
+
+        with self._res_lock:
+            node = self._get_node(target_node_id)
+            node.mem_size_available -= param_t.mem
+            node.number_cores_available -= param_t.number_cores_available
+            node.disk_size_available -= param_t.disk_size_available
+
+        self._logger.debug('done')
+
+    def _add_instance(instance):
+        self._logger.debug('invoked')
+        assert False
+        self._logger.debug('done')
+
+    def _remove_instance(inst_id):
+        self._logger.debug('invoked')
+        assert False
+        self._logger.debug('done')
+    
+    def _startup_run_instances_thread(self,
+                                      instnce_ids,
+                                      reservation_id,
+                                      user_id,
+                                      params_t,
+                                      image_id, image_url,
+                                      kernel_id, kernel_url,
+                                      ramdisk_id, ramdisk_url,
+                                      net_configs,
+                                      target_node_id):
+        self._logger.debug('invoked')
+
+        for i in xrange(len(instnce_ids)):
+            nid = self._schedule_instance(params_t, target_node_id)
+            self._run_instance_thread(instnce_ids[i],
+                                      reservation_id,
+                                      params_t,
+                                      image_id, image_url,
+                                      kernel_id, kernel_url,
+                                      ramdisk_id, ramdisk_url,
+                                      net_configs[i],
+                                      user_id,
+                                      nid)
+
+        self._logger.debug('done')
+
+    def do_run_instances(self, 
                          instance_ids,
+                         reservation_id,
+                         user_id,
                          params_t,
                          image_id, image_url,
                          kernel_id, kernel_url,
                          ramdisk_id, ramdisk_url,
                          mac_addrs,
-                         target_node=None):
+                         target_node_id=None):
+        self._logger.info('invoked')
+
+        verify_run_instances_arguments = lambda: len(instance_ids) == len(mac_addrs) and self._has_node(target_node_id) != -1
+
+        # verify arguments
+        if not self._verify_run_instances_arguments():
+            self._logger.error('error arguments')
+            return Result.new(0xFFFF, 'failed to run instances')
+        
+        # setup NetConfig
+        net_configs = [NetConfig.new_instance(mac=mac) for mac in mac_addrs]
+
+        self._startup_run_instances_thread(instance_ids,
+                                           reservation_id,
+                                           user_id,
+                                           params_t,
+                                           image_id, image_url,
+                                           kernel_id, kernel_url,
+                                           ramdisk_id, ramdisk_url,
+                                           net_configs,
+                                           target_node_id)
+                
+        self._logger.debug('done')
         return Result.new(0x0, "run instances")
 
     def do_reboot_instances(self):

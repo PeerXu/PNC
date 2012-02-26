@@ -99,6 +99,12 @@ NC_CALL_MAX = 4
 
 CLUSTER_MONITOR_INTERVAL = 5 # second
 
+CLUSTER_WAKE_THRESH = 10
+
+# there are some policy: greed,
+# and explicit target node
+CLUSTER_DEFAULT_SCHEDULE_POLITY = "greed"
+
 #
 # NODE
 #

@@ -135,12 +135,6 @@ class ResultThread(threading.Thread):
         self.is_done = True
 
 def main():
-#    print gen_libvirt_xml("test",
-#                          "00-000-0000",
-#                          256,
-#                          1,
-#                          "/home/peer/image/xp.img",
-#                          "00:00:00:00:00:00")
     pass
     
 if __name__ == '__main__':
