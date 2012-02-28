@@ -8,7 +8,7 @@ import threading
 import config
 from common.controller import Controller
 from common import utils
-from common.data import ClusterDetail, ClusterResource, ClusterInstance, Result
+from common.data import ClusterDetail, ClusterResource, ClusterInstance, Result, InstanceState, NetConfig
 
 class Cluster(Controller):
     ADDR = config.CLUSTER_ADDR
@@ -89,18 +89,22 @@ class Cluster(Controller):
         return self._cc_instances[idx]
 
     def _add_instance(self, inst):
+        self._logger.debug("invoked")
         if self._has_instance(inst.id) != -1:
             self._logger.warn('instance %s already exists' % (inst.id,))
             return
         self._cc_instances.append(inst)
         self._logger.debug('add instance %s' % (inst.id,))
+        self._logger.debug("done")
 
     def _remove_instance(self, inst_id):
+        self._logger.debug("invoked")
         idx = self._has_instance(inst_id)
         if idx == -1:
             return
         del self._cc_instances[idx]
         self._logger.debug('remove instance %s' % (inst_id,))
+        self._logger.debug("done")
 
     def _thread_monitor(self):
         self._logger.debug("invoked.")
@@ -210,7 +214,7 @@ class Cluster(Controller):
         [inst_instances.append(inst) for inst in self._iter_node() if inst.node.id == nid]
         self._logger.debug('done')
         return inst_instances
-n
+
     def do_remove_node(self, nid, force=False):
         self._logger.info('invoked')
         with self._res_lock:
@@ -325,16 +329,6 @@ n
 
         self._logger.debug('done')
 
-    def _add_instance(instance):
-        self._logger.debug('invoked')
-        assert False
-        self._logger.debug('done')
-
-    def _remove_instance(inst_id):
-        self._logger.debug('invoked')
-        assert False
-        self._logger.debug('done')
-    
     def _startup_run_instances_thread(self,
                                       instnce_ids,
                                       reservation_id,
