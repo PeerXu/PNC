@@ -1,8 +1,25 @@
+PROJECTNAME=PNC
 ETAGS=TAGS
 GTAGS=GPATH GRTAGS GSYMS GTAGS
 TAGS=$(ETAGS) $(GTAGS)
+CURDIR=`pwd`
+INSTALLDIR=/opt/$(PROJECTNAME)
+USER=`whoami`
 
 RM=rm -rf
+
+install:
+	sudo ln -s $(CURDIR) $(INSTALLDIR)
+	sudo chown $(USER) $(INSTALLDIR)
+	(cd tools; make install)
+
+uninstall:
+	sudo rm $(INSTALLDIR)
+	(cd tools; make uninstall)
+
+reinstall:
+	make uninstall
+	make install
 
 tags:
 	find . -name "*.py" | xargs etags -a
