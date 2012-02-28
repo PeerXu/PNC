@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import sys
-HOME = "/home/peer/PNC/"
+HOME = "/opt/PNC/"
 sys.path.append(HOME)
 del sys
 

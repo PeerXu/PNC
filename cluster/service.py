@@ -210,7 +210,7 @@ class Cluster(Controller):
         [inst_instances.append(inst) for inst in self._iter_node() if inst.node.id == nid]
         self._logger.debug('done')
         return inst_instances
-n
+
     def do_remove_node(self, nid, force=False):
         self._logger.info('invoked')
         with self._res_lock:
