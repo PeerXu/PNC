@@ -12,7 +12,7 @@ LIBVIRT_CONNECTION = "qemu:///system"
 
 INSTANCE_MAC_PREFIX = "0A:EE:EE"
 
-STANDARD_XML = """
+STANDARD_XML="""
 <domain type='kvm'>
   <name>{{ NAME }}</name>
   <uuid>{{ UUID }}</uuid>
@@ -57,6 +57,52 @@ STANDARD_XML = """
   </devices>
 </domain>
 """
+
+#STANDARD_XML = """
+#<domain type='kvm'>
+#  <name>{{ NAME }}</name>
+#  <uuid>{{ UUID }}</uuid>
+#  <memory>{{ MEMORY }}</memory>
+#  <currentMemory>{{ CURRENTMEMORY }}</currentMemory>
+#  <vcpu>{{ VCPU }}</vcpu>
+#  <os>
+#    <type arch='x86_64' machine='pc-0.12'>hvm</type>
+#    <boot dev='hd'/>
+#  </os>
+#  <features>
+#    <acpi/>
+#    <apic/>
+#    <pae/>
+#  </features>
+#  <clock offset='utc'/>
+#  <on_poweroff>destroy</on_poweroff>
+#  <on_reboot>restart</on_reboot>
+#  <on_crash>restart</on_crash>
+#  <devices>
+#    <emulator>/usr/bin/kvm</emulator>
+#    <disk type='file' device='disk'>
+#      <driver name='qemu' type='qcow2' cache='writeback'/>
+#      <source file='{{ DISK_SOURCE_FILE }}'/>
+#      <target dev='{{ DISK_TARGET_DEV }}' bus='ide'/>
+#    </disk>
+#    <interface type='network'>
+#      <source network='default'/>
+#      <mac address='{{ MAC_ADDRESS }}'/>
+#    </interface>
+#    <console type='pty'>
+#      <target port='0'/>
+#    </console>
+#    <console type='pty'>
+#      <target port='0'/>
+#    </console>
+#    <input type='mouse' bus='ps2'/>
+#    <graphics type='vnc' port='-1' autoport='yes' keymap='en-us'/>
+#    <video>
+#      <model type='cirrus' vram='9216' heads='1'/>
+#    </video>
+#  </devices>
+#</domain>
+#"""
 
 #
 # PATH
@@ -127,4 +173,4 @@ NODE_MONITOR_INTERVAL = 5 # second
 TEARDOWN_STATE_DURATION = 10 #180
 BOOTING_CLEANED_THRESHOLD = 10 #60 * 60 * 2
 
-NODE_PASSWD = "asd"
+NODE_PASSWD = "ji97ilkoa"

@@ -61,7 +61,7 @@ def gen_libvirt_xml(name, uuid, memory, vcpu, disk_path, mac, current_memory=-1)
     kwargs['name'] = name
     kwargs['uuid'] = uuid
     kwargs['memory'] = memory * 1024
-    kwargs['currentmemory'] = current_memory == -1 and memory or current_memory * 1024
+    kwargs['currentmemory'] = current_memory == -1 and kwargs['memory'] or current_memory * 1024
     kwargs['vcpu'] = vcpu
     kwargs['disk_source_file'] = disk_path
     kwargs['disk_target_dev'] = "hd"

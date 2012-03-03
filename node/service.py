@@ -293,7 +293,7 @@ class Node(Controller):
         # startup instance from xml
         dom = None
         try:
-            dom = self._nc_detail.vir_conn.createXML(xml, 0)
+            dom = self._nc_detail.vir_conn.createLinux(xml, 0)
         except: pass
 
         if dom is None:

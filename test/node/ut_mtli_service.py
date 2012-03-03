@@ -13,30 +13,16 @@ class Test(unittest.TestCase):
             params = data.VirtualMachine()
             params.cores = 1
             params.disk = 0
-            params.mem = 64
+            params.mem = 1024
             server_url = 'http://%s:%d' % (config.NODE_ADDR[0], config.NODE_ADDR[1])
-#            server = xmlrpclib.ServerProxy(server_url)
-#            result = server.do_run_instance(
-#                                            "test%s" % (str(rand.random())),
-#                                            #"test",
-#                                            "None",
-#                                            params, # VirtualMachine
-#                                            "None",
-#                                            "/home/cloud/image/xp.qcow2",
-#                                            "None",
-#                                            "None",
-#                                            "None",
-#                                            "None",
-#                                            {}, # net_config
-#                                            "None")
+
             server = xmlrpclib.ServerProxy(server_url, allow_none=True)
             result = server.do_run_instance(
-                                            "test%s" % (str(rand.random())),
-                                            #"test",
+                                            "inst-1-arch",
                                             None,
                                             params, # VirtualMachine
                                             None,
-                                            "/home/cloud/image/xp.qcow2",
+                                            '/opt/PNC/images/1.img',
                                             None,
                                             None,
                                             None,
