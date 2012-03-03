@@ -32,4 +32,4 @@ clean:
 
 lines:
 	(cd log; rm -f *.log)
-	count=0; for f in `find .`; do if [ ! -d $$f ]; then count=$$count+`cat $$f | wc -l`; fi; done; echo $$count | bc
+	count=0; for f in `find . | grep -v .*.img`; do if [ ! -d $$f ]; then count=$$count+`cat $$f | wc -l`; fi; done; echo $$count | bc

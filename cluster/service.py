@@ -124,8 +124,41 @@ class Cluster(Controller):
 
     def _reflash_instances(self):
         self._logger.debug("invoked")
-        [self._reflash_instance(inst) for inst in self._iter_instance()]
+#        [self._reflash_instance(inst) for inst in self._iter_instance()]
+        reflash_map = {}
+        for inst in self._iter_instance():
+            if not reflash_map.has_key(inst.node):
+                reflash_map[inst.node] = []
+            reflash_map[inst.node].append(inst)
+        [self._reflash_instances_by_list(insts) for insts in reflash_map.values()]
         self._logger.debug("done")
+
+    def _reflash_instances_by_list(self, insts):
+
+        if not isinstance(insts, list) or len(insts) == 0:
+            return
+        
+        inst_ids = []
+        [inst_ids.append(inst.instance_id) for inst in insts]
+        
+        try:
+            node = utils.get_conctrller_object(insts[0].node.uri)
+            rs = node.do_describe_instances(inst_ids)
+        except:
+            self._logger.warn('failed to connect node %s' % insts[0].node.uri)
+
+        if rs['code']:
+            self._logger.warn('failed to reflash instances: %s' % str(inst_ids))
+            return
+
+        data_instances = rs['data']['instances']
+        new_instances_map = {}
+        for data_inst in data_instances:
+            new_inst = Instance(data_inst)
+            new_instances_map[new_inst.instance_id] = new_inst
+
+        [self._reflah_instance(inst, new_instances_map.get(inst.instance_id, None)) for inst in insts]
+        
 
     def _change_node_status(self, res, status):
         self._logger.debug('invoked')
@@ -160,36 +193,23 @@ class Cluster(Controller):
 
         self._logger.debug("done")
 
-    """ unfinish """
-    def _reflash_instance(self, inst):
-        self._logger.debug("invoked.")
+    def _reflash_instance(self, inst, new_inst):
+        self._logger.debug('invoked')
 
-        res = inst.node
-        node = utils.get_conctrller_object(res.uri)
-        try:
-            rs = node.do_describe_instances([inst.instance_id])
-            if rs.code:
-                self._logger.warn('failed to get instance %s from node %s' % (inst.instance_id,
-                                                                              node.id))
-                self._change_node_status(inst, InstanctState.NOSTATE)
-                return
-        except:
-            self._logger.warn('failed to connect node %s' % res.id)
+        if not new_inst:
+            self._remove_instance(inst.instance_id)
+            self._logger.info('instance %s not found on %s, remove it' % (inst.instance_id,
+                                                                          inst.node.id)
             return
 
-        try:
-            new_inst = Instance(rs.data['instances'][0])
-        except:
-            self._logger.warn('failed to get isntance %s from node %s' % (inst.instance_id,
-                                                                          node.id))
-            self._change_node_status(inst. InstanceState.NOSTATE)
-            return
+        self._logger.info('reflash instance %s' % inst.instance_id)
 
-        inst.state_code = new_inst.state_code
+        self._change_instance_state(inst, new_inst.state_code)
         inst.net = new_inst.net
         inst.volumes = new_inst.volumes
 
-        self._logger.debug("done")
+        self._logger.debug('done')
+
 
     def _change_instance_state(self, inst, state):
         self._logger.debug('invoked')
@@ -198,6 +218,8 @@ class Cluster(Controller):
                                                                       InstanceState.state_name(state)))
         inst.state_code = InstanceState.NOSTATE
         self._logger.debug('done')
+
+
 
     def _nodes_size(self):
         return len(self._cc_resources)

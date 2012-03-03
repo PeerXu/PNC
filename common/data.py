@@ -68,7 +68,7 @@ class Instance:
     reservation_id = ""
     user_id = ""
     state_code = 0 # RunInstance request arrival
-    launch_time = 0 # STARTING -> BOOTING transition
+    launch_time = 0 # STAGING -> BOOTING transition
     termination_time = 0 # when resources are release (-> TRERDOWN transtion)
     boot_time = 0
     params = None # value of VirtualMachine
