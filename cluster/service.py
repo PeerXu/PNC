@@ -160,6 +160,7 @@ class Cluster(Controller):
 
         self._logger.debug("done")
 
+    """ unfinish """
     def _reflash_instance(self, inst):
         self._logger.debug("invoked.")
 
