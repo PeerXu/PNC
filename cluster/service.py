@@ -8,7 +8,7 @@ import threading
 import config
 from common.controller import Controller
 from common import utils
-from common.data import ClusterDetail, ClusterResource, ClusterInstance, Result, InstanceState, NetConfig
+from common.data import ClusterDetail, ClusterResource, NodeResource, ClusterInstance, Result, InstanceState, NetConfig
 
 class Cluster(Controller):
     ADDR = config.CLUSTER_ADDR
@@ -33,7 +33,7 @@ class Cluster(Controller):
         # startup to initialize
         self._initialized = -1
 
-        self._cc_resources = [] # data.ClusterResource
+        self._cc_resources = [] # data.ClusterResourcne
         self._cc_instances = [] # data.ClusterInstance
         self._cc_detail = ClusterDetail()
         
@@ -110,8 +110,93 @@ class Cluster(Controller):
         self._logger.debug("invoked.")
         while True:
             self._logger.debug("wake up")
+            with self._res_lock:
+                self._reflash_node_resources()
+            with self._inst_lock:
+                self._reflash_instances()
             self._logger.debug("sleep")
             time.sleep(config.CLUSTER_MONITOR_INTERVAL)
+
+    def _reflash_node_resources(self):
+        self._logger.debug("invoked")
+        [self._reflash_node_resource(res) for res in self._iter_node()]
+        self._logger.debug("done")
+
+    def _reflash_instances(self):
+        self._logger.debug("invoked")
+        [self._reflash_instance(inst) for inst in self._iter_instance()]
+        self._logger.debug("done")
+
+    def _change_node_status(self, res, status):
+        self._logger.debug('invoked')
+        self._logger.info('resource %s change state from %s to %s' % (res.id, res.node_status, status))
+        res.node_status = status
+        self._logger.debug('done')
+
+    def _reflash_node_resource(self, res):
+        self._logger.debug("invoked.")
+
+        node = utils.get_conctrller_object(res.uri)
+        try:
+            with self._nccall_sem:
+                rs = node.do_describe_resource()
+            if rs['code']:
+                self._logger.warn('failed to connect node %s' % res.id)
+                self._change_node_status(res, 'error')
+                return
+            
+            new_res = NodeResource(rs['data']['resource'])
+            
+            self._change_node_status(res, new_res.node_status)
+            res.node_status = new_res.node_status
+            res.mem_size_max = new_res.mem_size_max
+            res.mem_size_available = new_res.mem_size_available
+            res.disk_size_max = new_res.disk_size_max
+            res.disk_size_available = new_res.disk_size_available
+            res.number_cores_max = new_res.number_cores_max
+            res.number_cores_available = new_res.number_cores_available
+        except:
+            self._change_node_status(res, 'error')
+
+        self._logger.debug("done")
+
+    def _reflash_instance(self, inst):
+        self._logger.debug("invoked.")
+
+        res = inst.node
+        node = utils.get_conctrller_object(res.uri)
+        try:
+            rs = node.do_describe_instances([inst.instance_id])
+            if rs.code:
+                self._logger.warn('failed to get instance %s from node %s' % (inst.instance_id,
+                                                                              node.id))
+                self._change_node_status(inst, InstanctState.NOSTATE)
+                return
+        except:
+            self._logger.warn('failed to connect node %s' % res.id)
+            return
+
+        try:
+            new_inst = Instance(rs.data['instances'][0])
+        except:
+            self._logger.warn('failed to get isntance %s from node %s' % (inst.instance_id,
+                                                                          node.id))
+            self._change_node_status(inst. InstanceState.NOSTATE)
+            return
+
+        inst.state_code = new_inst.state_code
+        inst.net = new_inst.net
+        inst.volumes = new_inst.volumes
+
+        self._logger.debug("done")
+
+    def _change_instance_state(self, inst, state):
+        self._logger.debug('invoked')
+        self._logger.info('change instance %s state from %s to %s' % (inst.instance_id,
+                                                                      InstanceState.state_name(inst.state_code),
+                                                                      InstanceState.state_name(state)))
+        inst.state_code = InstanceState.NOSTATE
+        self._logger.debug('done')
 
     def _nodes_size(self):
         return len(self._cc_resources)
@@ -255,10 +340,8 @@ class Cluster(Controller):
         return Result.new(0x0, "describe instances")
 
     def _schedule_instance(self, param, target_node_id=None):
-        if target_node_id == None:
-            policy = "explicit"
-        else:
-            policy = config.CLUSTER_DEFAULT_SCHEDULE_POLITY
+
+        policy = target_node_id and "explicit" or config.DEFAULT_SCHEDULE_POLITY
 
         try:
             return getattr(self, '_schedule_instance_' + policy)(param, target_node_id)
@@ -266,13 +349,56 @@ class Cluster(Controller):
             self._logger.critical('instance schedule function not found, please fix config')
             sys.exit(255)
 
+    def _iter_running_node(self):
+        return [res for res in self._iter_node() if res.node_status == "ok"]
+
+    def _node_resource_point(self, res):
+        return res.number_cores_available * config.CORES_POINT_PER_COUNT + res.mem_size_available * config.MEMORY_POINT_PER_GB + res.disk_size_available * config.DISK_POINT_PER_GB
+
+    def _verify_resource(self, param, res):
+        lack_list = []
+        if res.number_cores_available < param.cores:
+            lack_list.append('cores')
+        if res.mem_size_available < param.memory:
+            lack_list.append('memory')
+        if res.disk_size_available < param.disk:
+            lack_list.append('disk')
+        return lack_list
+
     def _schedule_instance_greed(self, param, _=None):
-        assert False
-        return 0
-    
+        return self._schedule_instance_by_func(lambda x,y: x<y)
+
+    def _schedule_instance_smart(self, param, _=None):
+        return self._schedule_instance_by_func(lambda x,y: x>y)
+
+    def _schedule_instance_by_func(self, func):
+        def warpper(param, _=None):
+            point = 0
+            perfect_res = None
+            for res in self._iter_running_node():
+                if not self._verify_resource(param, res):
+                    cur_point = self._node_resource_point(res)
+                    if func(cur_point, point):
+                        point = cur_point
+                        perfect_res = res
+            return perfect_res
+        return warpper
+
     def _schedule_instance_explicit(self, param, target_node):
-        assert False
-        return 0
+        try:
+            return [res for res in self._iter_running_node() if res.id == target_node and not self._verify_resource(param, res)][0]
+        except:
+            return None
+    
+    def _verify_resource(self, param, res):
+        lack = []
+        if res.number_cores_available - param.cores < 0:
+            lack.append("cpu")
+        if res.mem_size_available - param.mem < 0:
+            lack.append("memory")
+        if res.disk_size_available - param.disk < 0:
+            lack.append("disk")
+        return lack
 
     def _run_instance_thread(self, 
                              instance_id,

@@ -1,3 +1,4 @@
+
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
@@ -34,6 +35,7 @@ class NetConfig:
         self.ip = data["ip"]
         self.mac = data["mac"]
     
+    @staticmethod
     def new_instance(ip=None, mac=None):
         net = NetConfig()
         net.ip = ip and net.ip
@@ -327,8 +329,6 @@ def meta_state_factory(clazz, array):
         setattr(clazz, k, v)
         clazz._map[v] = k
     
-#meta_state_factory = lambda clazz, array: [setattr(clazz, k, v) for (k, v) in array]
-
 class ControlState:
     RUNNING = 1
     LOST = 2
@@ -370,3 +370,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+

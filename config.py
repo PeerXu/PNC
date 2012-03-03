@@ -103,7 +103,14 @@ CLUSTER_WAKE_THRESH = 10
 
 # there are some policy: greed,
 # and explicit target node
-CLUSTER_DEFAULT_SCHEDULE_POLITY = "greed"
+GREED_POLICY = "greed"
+SMART_POLICY = "smart"
+# default schedule policy
+DEFAULT_SCHEDULE_POLITY = GREED_POLICY
+
+CORES_POINT_PER_COUNT = 1 / 1.0
+MEMORY_POINT_PER_MB = 1 / 2.0 / 1024
+DISK_POINT_PER_MB = 1 / 100.0 / 1024
 
 #
 # NODE
