@@ -8,7 +8,7 @@ import threading
 import config
 from common.controller import Controller
 from common import utils
-from common.data import ClusterDetail, ClusterResource, NodeResource, ClusterInstance, Instance, Result, InstanceState, NetConfig
+from common.data import ClusterDetail, ClusterResource, NodeResource, ClusterInstance, Instance, Result, InstanceState, NetConfig, VirtualMachine
 
 class Cluster(Controller):
     ADDR = config.CLUSTER_ADDR
@@ -98,7 +98,7 @@ class Cluster(Controller):
 
     def _add_instance(self, inst):
         self._logger.debug("invoked")
-        if self._has_instance(inst.id) != -1:
+        if self._has_instance(inst.instance_id) != -1:
             self._logger.warn('instance %s already exists' % (inst.id,))
             return
         self._cc_instances.append(inst)
@@ -403,14 +403,14 @@ class Cluster(Controller):
 
 
     def _node_resource_point(self, res):
-        return res.number_cores_available * config.CORES_POINT_PER_COUNT + res.mem_size_available * config.MEMORY_POINT_PER_GB + res.disk_size_available * config.DISK_POINT_PER_GB
+        return res.number_cores_available * config.CORES_POINT_PER_COUNT + res.mem_size_available * config.MEMORY_POINT_PER_MB + res.disk_size_available * config.DISK_POINT_PER_MB
 
 
     def _verify_resource(self, param, res):
         lack_list = []
         if res.number_cores_available < param.cores:
             lack_list.append('cores')
-        if res.mem_size_available < param.memory:
+        if res.mem_size_available < param.mem:
             lack_list.append('memory')
         if res.disk_size_available < param.disk:
             lack_list.append('disk')
@@ -418,11 +418,11 @@ class Cluster(Controller):
 
 
     def _schedule_instance_greed(self, param, _=None):
-        return self._schedule_instance_by_func(lambda x,y: x<y)
+        return self._schedule_instance_by_func(lambda x,y: x<y)(param, _)
 
 
     def _schedule_instance_smart(self, param, _=None):
-        return self._schedule_instance_by_func(lambda x,y: x>y)
+        return self._schedule_instance_by_func(lambda x,y: x>y)(param, _)
 
 
     def _schedule_instance_by_func(self, func):
@@ -432,31 +432,20 @@ class Cluster(Controller):
             for res in self._iter_running_node():
                 if not self._verify_resource(param, res):
                     cur_point = self._node_resource_point(res)
-                    if func(cur_point, point):
+                    if not perfect_res or func(cur_point, point):
                         point = cur_point
                         perfect_res = res
-            return perfect_res
+            return perfect_res and perfect_res.id or None
         return warpper
 
 
     def _schedule_instance_explicit(self, param, target_node):
         try:
-            return [res for res in self._iter_running_node() if res.id == target_node and not self._verify_resource(param, res)][0]
+            return ([res for res in self._iter_running_node() if res.id == target_node and not self._verify_resource(param, res)][0]).id
         except:
             return None
 
     
-    def _verify_resource(self, param, res):
-        lack = []
-        if res.number_cores_available - param.cores < 0:
-            lack.append("cpu")
-        if res.mem_size_available - param.mem < 0:
-            lack.append("memory")
-        if res.disk_size_available - param.disk < 0:
-            lack.append("disk")
-        return lack
-
-
     def _run_instance_thread(self, 
                              instance_id,
                              reservation_id,
@@ -473,20 +462,21 @@ class Cluster(Controller):
         node_server = utils.get_conctrller_object(res.uri)
 
         start_time = time.time()
-        res = Result()
-        while res.code and (time.time() - start_time < config.CLUSTER_WAKE_THRESH):
-            res = node_server.do_run_instance(instance_id,
-                                              reservation_id,
-                                              param_t,
-                                              image_id, image_url,
-                                              kernel_id, kernel_url,
-                                              ramdisk_id, ramdisk_url,
-                                              net_config,
-                                              user_id)
-            if res.code:
+        #rs = Result()
+        rs = {'code': 0xFFFF}
+        while rs['code'] and (time.time() - start_time < config.CLUSTER_WAKE_THRESH):
+            rs = node_server.do_run_instance(instance_id,
+                                             reservation_id,
+                                             param_t,
+                                             image_id, image_url,
+                                             kernel_id, kernel_url,
+                                             ramdisk_id, ramdisk_url,
+                                             net_config,
+                                             user_id)
+            if rs['code']:
                 time.sleep(1)
         
-        if res.code:
+        if rs['code']:
             self._logger.warn('failed to run instance: %s' % instance_id)
             return 1
 
@@ -552,20 +542,21 @@ class Cluster(Controller):
                          target_node_id=None):
         self._logger.info('invoked')
 
-        verify_run_instances_arguments = lambda: len(instance_ids) == len(mac_addrs) and self._has_node(target_node_id) != -1
+        verify_run_instances_arguments = lambda: len(instance_ids) == len(mac_addrs) and self._has_node(target_node_id) == -1
 
         # verify arguments
-        if not self._verify_run_instances_arguments():
+        if not verify_run_instances_arguments():
             self._logger.error('error arguments')
             return Result.new(0xFFFF, 'failed to run instances')
         
         # setup NetConfig
         net_configs = [NetConfig.new_instance(mac=mac) for mac in mac_addrs]
+        param = VirtualMachine(params_t)
 
         self._startup_run_instances_thread(instance_ids,
                                            reservation_id,
                                            user_id,
-                                           params_t,
+                                           param,
                                            image_id, image_url,
                                            kernel_id, kernel_url,
                                            ramdisk_id, ramdisk_url,
