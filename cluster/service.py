@@ -8,7 +8,7 @@ import threading
 import config
 from common.controller import Controller
 from common import utils
-from common.data import ClusterDetail, ClusterResource, NodeResource, ClusterInstance, Result, InstanceState, NetConfig
+from common.data import ClusterDetail, ClusterResource, NodeResource, ClusterInstance, Instance, Result, InstanceState, NetConfig
 
 class Cluster(Controller):
     ADDR = config.CLUSTER_ADDR
@@ -23,6 +23,7 @@ class Cluster(Controller):
         self._inst_lock = None
         self._res_lock = None
         self._nccall_sem = None
+
 
     def _init_cluster(self):
         if self._initialized > 0:
@@ -47,6 +48,7 @@ class Cluster(Controller):
         # _init_cluster done. set self._initialized to 1
         self._initialized = 1
 
+
     def start(self):
         self._logger.info("initialize cluster detail")
         
@@ -64,14 +66,17 @@ class Cluster(Controller):
         super(Cluster, self).start()
         self._logger.debug("start service done")
 
+
     def stop(self):
         self._logger.info("invoked")
         super(Cluster, self).stop()
         self._logger.debug("done")
         return Result.new(0x0, "stop service")
 
+
     def _instances_size(self):
         return len(self._cc_instances)
+
 
     def _has_instance(self, inst_id):
         for i in xrange(self._instances_size()):
@@ -79,14 +84,17 @@ class Cluster(Controller):
                 return i
         return -1
 
+
     def _iter_instance(self):
         return iter(self._cc_instances)
+
 
     def _get_instance(self, inst_id):
         idx = self._has_instance(inst_id)
         if idx == -1:
             return None
         return self._cc_instances[idx]
+
 
     def _add_instance(self, inst):
         self._logger.debug("invoked")
@@ -97,6 +105,7 @@ class Cluster(Controller):
         self._logger.debug('add instance %s' % (inst.id,))
         self._logger.debug("done")
 
+
     def _remove_instance(self, inst_id):
         self._logger.debug("invoked")
         idx = self._has_instance(inst_id)
@@ -105,6 +114,7 @@ class Cluster(Controller):
         del self._cc_instances[idx]
         self._logger.debug('remove instance %s' % (inst_id,))
         self._logger.debug("done")
+
 
     def _thread_monitor(self):
         self._logger.debug("invoked.")
@@ -117,10 +127,12 @@ class Cluster(Controller):
             self._logger.debug("sleep")
             time.sleep(config.CLUSTER_MONITOR_INTERVAL)
 
+
     def _reflash_node_resources(self):
         self._logger.debug("invoked")
         [self._reflash_node_resource(res) for res in self._iter_node()]
         self._logger.debug("done")
+
 
     def _reflash_instances(self):
         self._logger.debug("invoked")
@@ -132,6 +144,7 @@ class Cluster(Controller):
             reflash_map[inst.node].append(inst)
         [self._reflash_instances_by_list(insts) for insts in reflash_map.values()]
         self._logger.debug("done")
+
 
     def _reflash_instances_by_list(self, insts):
 
@@ -166,6 +179,7 @@ class Cluster(Controller):
         res.node_status = status
         self._logger.debug('done')
 
+
     def _reflash_node_resource(self, res):
         self._logger.debug("invoked.")
 
@@ -193,13 +207,14 @@ class Cluster(Controller):
 
         self._logger.debug("done")
 
+
     def _reflash_instance(self, inst, new_inst):
         self._logger.debug('invoked')
 
         if not new_inst:
             self._remove_instance(inst.instance_id)
             self._logger.info('instance %s not found on %s, remove it' % (inst.instance_id,
-                                                                          inst.node.id)
+                                                                          inst.node.id))
             return
 
         self._logger.info('reflash instance %s' % inst.instance_id)
@@ -220,24 +235,27 @@ class Cluster(Controller):
         self._logger.debug('done')
 
 
-
     def _nodes_size(self):
         return len(self._cc_resources)
+
 
     def _has_node(self, nid):
         for i in xrange(self._nodes_size()):
             if self._cc_resources[i].id == nid:
                 return i
         return -1
+
     
     def _iter_node(self):
         return iter(self._cc_resources)
+
 
     def _get_node(self, nid):
         idx = self._has_node(nid)
         if idx == -1:
             return None
         return self._cc_resources[idx]
+
     
     def _add_node(self, node_res):
         if self._has_node(node_res.id) != -1:
@@ -246,12 +264,14 @@ class Cluster(Controller):
         self._cc_resources.append(node_res)
         self._logger.debug('add node %s' % (node_res.id,))
 
+
     def _remove_node(self, nid):
         idx = self._has_node(nid)
         if idx == -1:
             return
         del self._cc_resources[idx]
         self._logger.debug('remove node %s' % (nid,))
+
 
     def _add_node_thread(self, nid, ip, port):
         self._logger.debug('invoked')
@@ -278,11 +298,13 @@ class Cluster(Controller):
             self._add_node(res)
             self._logger.info("add node %s" % (nid,))
         self._logger.debug('done')
+
         
     def _startup_add_node_thread(self, nid, ip, port):
         self._logger.debug('invoked')
         threading.Thread(target=self._add_node_thread, args=(nid, ip, port)).start()
         self._logger.debug('done')
+
 
     def do_add_node(self, nid, ip, port):
         self._logger.info('invoked')
@@ -296,6 +318,7 @@ class Cluster(Controller):
         self._logger.debug('done')
         return Result.new(0x0, {'msg': 'add node %s' % (nid,)})
 
+
     def _instance_on_node(self, nid):
         self._logger.debug('invoked')
         for inst in self._iter_instance():
@@ -304,10 +327,6 @@ class Cluster(Controller):
         self._logger.debug('done')
         return False
 
-#    #unimplement
-#    def _terminate_instances(self, inst_ids):
-#        self._logger.debug('invoked')
-#        self._logger.debug('done')
 
     def _startup_terminate_instances(self, inst_ids):
         # what a BAICHI action!!!
@@ -316,12 +335,14 @@ class Cluster(Controller):
         thread.join()
         return thread.result
 
+
     def _get_instances_on_node(self, nid):
         self._logger.debug('invoked')
         inst_instances = []
         [inst_instances.append(inst) for inst in self._iter_node() if inst.node.id == nid]
         self._logger.debug('done')
         return inst_instances
+
 
     def do_remove_node(self, nid, force=False):
         self._logger.info('invoked')
@@ -353,14 +374,18 @@ class Cluster(Controller):
         self._logger.debug('done')
         return Result.new(0x0, "remove node %s" % nid)
 
+
     def do_power_down(self):
         return Result.new(0x0, "power down")
+
 
     def do_terminate_instances(self):
         return Result.new(0x0, "terminate instances")
 
+
     def do_describe_instances(self):
         return Result.new(0x0, "describe instances")
+
 
     def _schedule_instance(self, param, target_node_id=None):
 
@@ -372,11 +397,14 @@ class Cluster(Controller):
             self._logger.critical('instance schedule function not found, please fix config')
             sys.exit(255)
 
+
     def _iter_running_node(self):
         return [res for res in self._iter_node() if res.node_status == "ok"]
 
+
     def _node_resource_point(self, res):
         return res.number_cores_available * config.CORES_POINT_PER_COUNT + res.mem_size_available * config.MEMORY_POINT_PER_GB + res.disk_size_available * config.DISK_POINT_PER_GB
+
 
     def _verify_resource(self, param, res):
         lack_list = []
@@ -388,11 +416,14 @@ class Cluster(Controller):
             lack_list.append('disk')
         return lack_list
 
+
     def _schedule_instance_greed(self, param, _=None):
         return self._schedule_instance_by_func(lambda x,y: x<y)
 
+
     def _schedule_instance_smart(self, param, _=None):
         return self._schedule_instance_by_func(lambda x,y: x>y)
+
 
     def _schedule_instance_by_func(self, func):
         def warpper(param, _=None):
@@ -407,11 +438,13 @@ class Cluster(Controller):
             return perfect_res
         return warpper
 
+
     def _schedule_instance_explicit(self, param, target_node):
         try:
             return [res for res in self._iter_running_node() if res.id == target_node and not self._verify_resource(param, res)][0]
         except:
             return None
+
     
     def _verify_resource(self, param, res):
         lack = []
@@ -422,6 +455,7 @@ class Cluster(Controller):
         if res.disk_size_available - param.disk < 0:
             lack.append("disk")
         return lack
+
 
     def _run_instance_thread(self, 
                              instance_id,
@@ -478,6 +512,7 @@ class Cluster(Controller):
 
         self._logger.debug('done')
 
+
     def _startup_run_instances_thread(self,
                                       instnce_ids,
                                       reservation_id,
@@ -503,6 +538,7 @@ class Cluster(Controller):
                                       nid)
 
         self._logger.debug('done')
+
 
     def do_run_instances(self, 
                          instance_ids,
@@ -539,20 +575,26 @@ class Cluster(Controller):
         self._logger.debug('done')
         return Result.new(0x0, "run instances")
 
+
     def do_reboot_instances(self):
         return Result.new(0x0, "reboot instances")
+
 
     def do_get_console_output(self):
         return Result.new(0x0, "console output")
 
+
     def do_describe_resources(self):
         return Result.new(0x0, "describe resources")
 
+
     def do_start_network(self):
         return Result.new(0xFFFF, "start network")
+
     
     def do_attach_volume(self):
         return Result.new(0xFFFF, "attach volume")
+
 
     def do_detach_volume(self):
         return Result.new(0xFFFF, "detach volume")

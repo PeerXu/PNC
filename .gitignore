@@ -2,4 +2,5 @@
 *~
 *.log
 images/*.img
-.emacs.desktop.?
+.emacs.desktop
+.emacs.desktop.*
