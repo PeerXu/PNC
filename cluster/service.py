@@ -80,7 +80,7 @@ class Cluster(Controller):
 
     def _has_instance(self, inst_id):
         for i in xrange(self._instances_size()):
-            if self._cc_instances[i].id == inst_id:
+            if self._cc_instances[i].instance_id == inst_id:
                 return i
         return -1
 
@@ -102,7 +102,7 @@ class Cluster(Controller):
             self._logger.warn('instance %s already exists' % (inst.id,))
             return
         self._cc_instances.append(inst)
-        self._logger.debug('add instance %s' % (inst.id,))
+        self._logger.debug('add instance %s' % (inst.instance_id,))
         self._logger.debug("done")
 
 
@@ -157,12 +157,12 @@ class Cluster(Controller):
         try:
             node = utils.get_conctrller_object(insts[0].node.uri)
             rs = node.do_describe_instances(inst_ids)
+            if rs['code']:
+                self._logger.warn('failed to reflash instances: %s' % str(inst_ids))
+                return
         except:
             self._logger.warn('failed to connect node %s' % insts[0].node.uri)
 
-        if rs['code']:
-            self._logger.warn('failed to reflash instances: %s' % str(inst_ids))
-            return
 
         data_instances = rs['data']['instances']
         new_instances_map = {}
@@ -170,7 +170,7 @@ class Cluster(Controller):
             new_inst = Instance(data_inst)
             new_instances_map[new_inst.instance_id] = new_inst
 
-        [self._reflah_instance(inst, new_instances_map.get(inst.instance_id, None)) for inst in insts]
+        [self._reflash_instance(inst, new_instances_map.get(inst.instance_id, None)) for inst in insts]
         
 
     def _change_node_status(self, res, status):
@@ -497,8 +497,8 @@ class Cluster(Controller):
         with self._res_lock:
             node = self._get_node(target_node_id)
             node.mem_size_available -= param_t.mem
-            node.number_cores_available -= param_t.number_cores_available
-            node.disk_size_available -= param_t.disk_size_available
+            node.number_cores_available -= param_t.cores
+            node.disk_size_available -= param_t.disk
 
         self._logger.debug('done')
 

@@ -3,34 +3,35 @@
 # -*- coding: utf-8 -*-
 
 class Metadata:
-    correlation_id = ""
-    user_id = ""
     
     def __init__(self, data={}):
         if not data:
+            self.correlation_id = ""
+            self.user_id = ""
             return
         self.correlation_id = data["correlation_id"]
         self.user_id = data["user_id"]
 
 class VirtualMachine:
-    mem = 0
-    cores = 0
-    disk = 0
-    #dev_mapping = None
     
     def __init__(self, data={}):
+        
         if not data:
+            self.mem = 0
+            self.cores = 0
+            self.disk = 0
+            #self.dev_mapping = None
             return
         self.mem = data["mem"]
         self.cores = data["cores"]
         self.disk = data["disk"]
     
 class NetConfig:
-    ip = "0.0.0.0"
-    mac = "00:00:00:00:00:00"
     
     def __init__(self, data={}):
         if not data:
+            self.ip = "0.0.0.0"
+            self.mac = "00:00:00:00:00:00"
             return 
         self.ip = data["ip"]
         self.mac = data["mac"]
@@ -43,41 +44,43 @@ class NetConfig:
         return net
 
 class Volume:
-    volume_id = ""
-    remote_dev = ""
-    local_dev = ""
-    local_dev_real = ""
-    state_code = 0
     
     def __init__(self, data={}):
         if not data:
-            self.volume_id = data["volume_id"]
-            self.remote_dev = data["remote_dev"]
-            self.local_dev = data["local_dev"]
-            self.local_dev_real = data["local_dev_real"]
-            self.state_code = data["state_code"]
+            self.volume_id = ""
+            self.remote_dev = ""
+            self.local_dev = ""
+            self.local_dev_real = ""
+            self.state_code = 0
+            
+        self.volume_id = data["volume_id"]
+        self.remote_dev = data["remote_dev"]
+        self.local_dev = data["local_dev"]
+        self.local_dev_real = data["local_dev_real"]
+        self.state_code = data["state_code"]
 
 class Instance:
-    instance_id = ""
-    image_id = ""
-    image_url = ""
-    kernel_id = ""
-    kernel_url = ""
-    ramdisk_id = ""
-    ramdisk_url = ""
-    reservation_id = ""
-    user_id = ""
-    state_code = 0 # RunInstance request arrival
-    launch_time = 0 # STAGING -> BOOTING transition
-    termination_time = 0 # when resources are release (-> TRERDOWN transtion)
-    boot_time = 0
-    params = None # value of VirtualMachine
-    net = None # value of NetConfig
-    volumes = [] # value of Volume
     
     def __init__(self, data={}):
         if not data:
-            return 
+            self.instance_id = ""
+            self.image_id = ""
+            self.image_url = ""
+            self.kernel_id = ""
+            self.kernel_url = ""
+            self.ramdisk_id = ""
+            self.ramdisk_url = ""
+            self.reservation_id = ""
+            self.user_id = ""
+            self.state_code = 0 # RunInstance request arrival
+            self.launch_time = 0 # STAGING -> BOOTING transition
+            self.termination_time = 0 # when resources are release (-> TRERDOWN transtion)
+            self.boot_time = 0
+            self.params = None # value of VirtualMachine
+            self.net = None # value of NetConfig
+            self.volumes = [] # value of Volume
+            return
+         
         self.instance_id = data["instance_id"]
         self.image_id = data["image_id"]
         self.image_url = data["image_url"]
@@ -124,10 +127,9 @@ class Instance:
         return inst
 
 class ClusterInstance(Instance):
-    node = None # ClusterResource
-    
     def __init__(self, data={}):
         if not data:
+            self.node = None # ClusterResource
             return
         Instance.__init__(self, data)
 
@@ -163,17 +165,18 @@ class ClusterInstance(Instance):
     
         
 class NodeResource:
-    node_status = ""
-    mem_size_max = 0
-    mem_size_available = 0
-    disk_size_max = 0
-    disk_size_available = 0
-    number_cores_max = 0
-    number_cores_available = 0
     
     def __init__(self, data={}):
         if not data:
-            return 
+            self.node_status = ""
+            self.mem_size_max = 0
+            self.mem_size_available = 0
+            self.disk_size_max = 0
+            self.disk_size_available = 0
+            self.number_cores_max = 0
+            self.number_cores_available = 0
+            return
+         
         self.node_status = data["node_status"]
         self.mem_size_max = data["mem_size_max"]
         self.mem_size_available = data["mem_size_available"]
@@ -204,12 +207,13 @@ class NodeResource:
         return res
 
 class ClusterResource(NodeResource):
-    uri = ""
-    id = ""
     
     def __init__(self, data={}):
         if not data:
+            self.uri = ""
+            self.id = ""
             return
+        
         NodeResource.__init__(self, data['resource'])
         self.uri = data['uri']
         self.id = data['id']
@@ -239,18 +243,19 @@ class ClusterResource(NodeResource):
         return res
 
 class NodeDetail:
-    uri = ""
-    vir_conn = None
-    config_max_disk = 0
-    config_max_mem = 0
-    config_max_cores = 0
-    disk_max = 0
-    mem_max = 0
-    cores_max = 0
     
     def __init__(self, data={}):
         if not data:
+            self.uri = ""
+            self.vir_conn = None
+            self.config_max_disk = 0
+            self.config_max_mem = 0
+            self.config_max_cores = 0
+            self.disk_max = 0
+            self.mem_max = 0
+            self.cores_max = 0
             return
+        
         self.uri = data["uri"]
         #self.vir_conn = None
         self.config_max_disk = data["config_max_disk"]
@@ -261,19 +266,20 @@ class NodeDetail:
         self.cores_max = data["cores_max"]
 
 class ClusterDetail:
-    uri = ""
-    sched_policy = "DEFAULT"
-    sched_state = 0
-    config_max_disk = 0
-    config_max_mem = 0
-    config_max_cores = 0
-    disk_max = 0
-    mem_max = 0
-    cores_max = 0
     
     def __init__(self, data={}):
         if not data:
+            self.uri = ""
+            self.sched_policy = "DEFAULT"
+            self.sched_state = 0
+            self.config_max_disk = 0
+            self.config_max_mem = 0
+            self.config_max_cores = 0
+            self.disk_max = 0
+            self.mem_max = 0
+            self.cores_max = 0
             return
+        
         sched_policy = data['sched_policy']
         sched_state = data['sched_state']
         config_max_disk = data['config_max_disk']
@@ -306,12 +312,13 @@ class ClusterDetail:
         return cd
     
 class Result:
-    code = 0xFFFF
-    data = None
     
     def __init__(self, data={}):
         if not data:
+            self.code = 0xFFFF
+            self.data = None
             return
+        
         self.code = data["code"]
         self.data = data["data"]
         
@@ -364,10 +371,3 @@ instance_state_list = [("NOSTATE", 0),
 #}
 
 meta_state_factory(InstanceState, instance_state_list)
-
-def main():
-    print InstanceState.state_name(InstanceState.BOOTING)
-
-if __name__ == '__main__':
-    main()
-
