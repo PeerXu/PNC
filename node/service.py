@@ -460,7 +460,7 @@ class Node(Controller):
         finally:
             self._hyp_lock.release()
         
-        LOG_STR = " domain for instance %s" % (instance_id, )
+        LOG_STR = " domain for instance %s" % (instance_id,)
         if not ret:
             if destroy:
                 LOG_STR = "destroyed" + LOG_STR
@@ -641,12 +641,12 @@ class Node(Controller):
             disk_free = 0
             
         res = data.NodeResource.new_instance("ok",
-                                             self._nc_detail.config_max_mem, 
-                                             mem_free, 
-                                             self._nc_detail.config_max_disk, 
-                                             disk_free, 
-                                             self._nc_detail.config_max_cores, 
-                                             cores_free)
+                                             mem_free,
+                                             self._nc_detail.config_max_mem,
+                                             disk_free,
+                                             self._nc_detail.config_max_disk,
+                                             cores_free,
+                                             self._nc_detail.config_max_cores)
         
         return Result.new(0x0, {'msg': 'describe resource',
                                 'resource': res})

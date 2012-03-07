@@ -122,6 +122,7 @@ class Cluster(Controller):
             self._logger.debug("wake up")
             with self._res_lock:
                 self._reflash_node_resources()
+                self._reflash_cluster_detail()
             with self._inst_lock:
                 self._reflash_instances()
             self._logger.debug("sleep")
@@ -133,6 +134,26 @@ class Cluster(Controller):
         [self._reflash_node_resource(res) for res in self._iter_node()]
         self._logger.debug("done")
 
+    def _reflash_cluster_detail(self):
+        def reflash():
+            self._cc_detail.config_max_cores += res.number_cores_available
+            self._cc_detail.config_max_mem += res.mem_size_available
+            self._cc_detail.config_max_disk += res.disk_size_available
+            self._cc_detail.cores_max += res.number_cores_max
+            self._cc_detail.mem_max += res.mem_size_max
+            self._cc_detail.disk_max += res.disk_size_max
+            
+        self._logger.debug('invoked')
+        
+        detail = ClusterDetail()
+        detail.uri = self._cc_detail.uri
+        detail.sched_policy = self._cc_detail.sched_policy
+        detail.sched_state = self._cc_detail.sched_state
+        self._cc_detail = detail
+        
+        [reflash() for res in self._iter_node()]
+        
+        self._logger.debug('done')
 
     def _reflash_instances(self):
         self._logger.debug("invoked")
@@ -504,7 +525,7 @@ class Cluster(Controller):
 
 
     def _startup_run_instances_thread(self,
-                                      instnce_ids,
+                                      instance_ids,
                                       reservation_id,
                                       user_id,
                                       params_t,
@@ -515,9 +536,13 @@ class Cluster(Controller):
                                       target_node_id):
         self._logger.debug('invoked')
 
-        for i in xrange(len(instnce_ids)):
+        for i in xrange(len(instance_ids)):
             nid = self._schedule_instance(params_t, target_node_id)
-            self._run_instance_thread(instnce_ids[i],
+            if nid == None:
+                self._logger.warn('failed to start instance %s, not enough resource' % instance_ids[i])
+                return
+                
+            self._run_instance_thread(instance_ids[i],
                                       reservation_id,
                                       params_t,
                                       image_id, image_url,
@@ -576,6 +601,8 @@ class Cluster(Controller):
 
 
     def do_describe_resources(self):
+        res = ClusterResource()
+        
         return Result.new(0x0, "describe resources")
 
 
