@@ -48,32 +48,6 @@ class Cluster(Controller):
         # _init_cluster done. set self._initialized to 1
         self._initialized = 1
 
-
-    def start(self):
-        self._logger.info("initialize cluster detail")
-        
-        rs = self._init_cluster()
-        if rs == 1:
-            self._logger.error("cluster has _initialized")
-            sys.exit(1)
-        elif rs == -1:
-            self._logger.critical("startup cluster failed")
-            sys.exit(1)
-        self._logger.debug("initialize cluster detail done")
-
-        #startup service
-        self._logger.info("startup service")
-        super(Cluster, self).start()
-        self._logger.debug("start service done")
-
-
-    def stop(self):
-        self._logger.info("invoked")
-        super(Cluster, self).stop()
-        self._logger.debug("done")
-        return Result.new(0x0, "stop service")
-
-
     def _instances_size(self):
         return len(self._cc_instances)
 
@@ -327,19 +301,6 @@ class Cluster(Controller):
         self._logger.debug('done')
 
 
-    def do_add_node(self, nid, ip, port):
-        self._logger.info('invoked')
-        with self._res_lock:
-            # node is already in cluster?
-            if self._has_node(nid) != -1:
-                self._logger.warn('failed to add node %s, %s in node list' % (nid, nid))
-                return Result.new(0xFFFF, {'msg': 'failed to add node %s' % (nid,)})
-            
-            self._startup_add_node_thread(nid, ip, port)
-        self._logger.debug('done')
-        return Result.new(0x0, {'msg': 'add node %s' % (nid,)})
-
-
     def _instance_on_node(self, nid):
         self._logger.debug('invoked')
         for inst in self._iter_instance():
@@ -363,49 +324,6 @@ class Cluster(Controller):
         [inst_instances.append(inst) for inst in self._iter_node() if inst.node.id == nid]
         self._logger.debug('done')
         return inst_instances
-
-
-    def do_remove_node(self, nid, force=False):
-        self._logger.info('invoked')
-        with self._res_lock:
-            if self._has_node(nid) == -1:
-                self._logger.warn('node %s is not exists' % (nid,))
-                return Result.new(0xFFFF, 'failed to remove node %s' % (nid,))
-            if not force:
-                if self._instance_exist_on_node(nid):
-                    self._logger.warn('failed to remove node %s, some vm running on node %s' % (nid, nid))
-                    return Result.new(0xFFFF, 'failed to remove node %s' % (nid,))
-            else:
-                # if force is true, find all instance which is running on node
-                insts = self._get_instance_on_node(nid)
-                inst_ids = [inst.instance_id for inst in insts]
-        
-        if force:
-            with self._nccall_sem:
-                self._logger.info('terminate instances:', inst_ids)
-                ret = self._startup_terminate_instances(inst_ids)
-                if ret.code != 0x0:
-                    self._logger.error('failed to remove node %s, terminate vm failed' % (nid,))
-                    return Result.new(0xFFFF, 'failed to remove node %s' % (nid,))
-
-        with self._res_lock:
-            self._logger.info('remove node %s' % nid)
-            self._remove_node(nid)
-            
-        self._logger.debug('done')
-        return Result.new(0x0, "remove node %s" % nid)
-
-
-    def do_power_down(self):
-        return Result.new(0x0, "power down")
-
-
-    def do_terminate_instances(self):
-        return Result.new(0x0, "terminate instances")
-
-
-    def do_describe_instances(self):
-        return Result.new(0x0, "describe instances")
 
 
     def _schedule_instance(self, param, target_node_id=None):
@@ -553,6 +471,87 @@ class Cluster(Controller):
                                       nid)
 
         self._logger.debug('done')
+
+
+    def start(self):
+        self._logger.info("initialize cluster detail")
+        
+        rs = self._init_cluster()
+        if rs == 1:
+            self._logger.error("cluster has _initialized")
+            sys.exit(1)
+        elif rs == -1:
+            self._logger.critical("startup cluster failed")
+            sys.exit(1)
+        self._logger.debug("initialize cluster detail done")
+
+        #startup service
+        self._logger.info("startup service")
+        super(Cluster, self).start()
+        self._logger.debug("start service done")
+
+
+    def stop(self):
+        self._logger.info("invoked")
+        super(Cluster, self).stop()
+        self._logger.debug("done")
+        return Result.new(0x0, "stop service")
+
+
+    def do_add_node(self, nid, ip, port):
+        self._logger.info('invoked')
+        with self._res_lock:
+            # node is already in cluster?
+            if self._has_node(nid) != -1:
+                self._logger.warn('failed to add node %s, %s in node list' % (nid, nid))
+                return Result.new(0xFFFF, {'msg': 'failed to add node %s' % (nid,)})
+            
+            self._startup_add_node_thread(nid, ip, port)
+        self._logger.debug('done')
+        return Result.new(0x0, {'msg': 'add node %s' % (nid,)})
+
+
+    def do_remove_node(self, nid, force=False):
+        self._logger.info('invoked')
+        with self._res_lock:
+            if self._has_node(nid) == -1:
+                self._logger.warn('node %s is not exists' % (nid,))
+                return Result.new(0xFFFF, 'failed to remove node %s' % (nid,))
+            if not force:
+                if self._instance_exist_on_node(nid):
+                    self._logger.warn('failed to remove node %s, some vm running on node %s' % (nid, nid))
+                    return Result.new(0xFFFF, 'failed to remove node %s' % (nid,))
+            else:
+                # if force is true, find all instance which is running on node
+                insts = self._get_instance_on_node(nid)
+                inst_ids = [inst.instance_id for inst in insts]
+        
+        if force:
+            with self._nccall_sem:
+                self._logger.info('terminate instances:', inst_ids)
+                ret = self._startup_terminate_instances(inst_ids)
+                if ret.code != 0x0:
+                    self._logger.error('failed to remove node %s, terminate vm failed' % (nid,))
+                    return Result.new(0xFFFF, 'failed to remove node %s' % (nid,))
+
+        with self._res_lock:
+            self._logger.info('remove node %s' % nid)
+            self._remove_node(nid)
+            
+        self._logger.debug('done')
+        return Result.new(0x0, "remove node %s" % nid)
+
+
+    def do_power_down(self):
+        return Result.new(0x0, "power down")
+
+
+    def do_terminate_instances(self):
+        return Result.new(0x0, "terminate instances")
+
+
+    def do_describe_instances(self):
+        return Result.new(0x0, "describe instances")
 
 
     def do_run_instances(self, 
