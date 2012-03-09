@@ -546,9 +546,35 @@ class Cluster(Controller):
         return Result.new(0x0, "power down")
 
 
-    def do_terminate_instances(self):
-        return Result.new(0x0, "terminate instances")
+    def do_terminate_instances(self, inst_ids):
+        self._logger.info('invoked')
+        if not isinstance(inst_ids, list):
+            return Result.new(0x0, {'msg': 'error arguments'})
 
+        [self._find_and_terminate_instance(inst_id) for inst_id in inst_ids]
+
+        self._logger.info('done')
+        return Result.new(0x0, 'terminate instances')
+
+    def _find_and_terminate_instance(self, inst_id):
+        self._logger.debug('invoked')
+
+        inst = self._get_instance(inst_id)
+        if inst == None:
+            self._logger.warn('instance %s do not exists on cluster' % inst_id)
+            return
+
+        node = utils.get_conctrller_object(inst.node.uri)
+        try:
+            rs = node.do_terminate_instance(inst_id)
+            if rs['code'] != 0:
+                self._logger.warn('failed to terminate instance %s on node %s' % (inst_id, inst.node.id))
+                return
+        except:
+            self._logger.warn('failed to connect node %s' % inst.node.id)
+            return
+
+        self._logger.debug('done')
 
     def do_describe_instances(self):
         return Result.new(0x0, "describe instances")
