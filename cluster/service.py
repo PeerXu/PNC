@@ -275,7 +275,7 @@ class Cluster(Controller):
         node = utils.get_conctrller_object(utils.uri_generator(ip, port))
         try:
             with self._nccall_sem:
-            rs = node.do_describe_resource()
+                rs = node.do_describe_resource()
             if rs['code'] != 0x0:
                 self._logger.warn(rs.data['msg'])
                 return
@@ -581,8 +581,26 @@ class Cluster(Controller):
 
         self._logger.debug('done')
 
-    def do_describe_instances(self):
-        return Result.new(0x0, "describe instances")
+    def do_describe_instances(self, inst_ids):
+        self._logger.info('invoked')
+
+        if inst_ids and  not isinstance(inst_ids, list):
+            self._logger.warn('error arguments with: ' + inst_ids)
+            return Result.new(0xFFFF, {'msg': 'error arguments'})
+
+        rs = []
+
+        with self._inst_lock:
+            if inst_ids == None:
+                [rs.append(inst) for inst in self._iter_instance()]
+            else:
+                for inst_id in inst_ids:
+                    inst = self._get_instance(inst_id)
+                    inst and rs.append(inst)
+
+        self._logger.debug('done')
+        return Result.new(0x0, {'msg': "describe instances",
+                                'instances': rs})
 
 
     def do_run_instances(self, 
@@ -662,10 +680,57 @@ class Cluster(Controller):
     def do_describe_resources(self):
         self._logger.info('invoked')
 
+        with self._res_lock:
+            (cores_available, 
+             mem_available, 
+             disk_available) = reduce(lambda x, acc: (x[0] + acc[0],
+                                                      x[1] + acc[1],
+                                                      x[2] + acc[2]),
+                                      [(res.number_cores_available,
+                                        res.mem_size_available, 
+                                        res.disk_size_available) for res in self._iter_running_node()],
+                                      (0,0,0))
+         
+        with self._inst_lock:
+            (sum_cores,
+             sum_mem,
+             sum_disk) = reduce(lambda x, acc: (x[0] + acc[0],
+                                                x[1] + acc[1],
+                                                x[2] + acc[2]),
+                                [(inst.params.cores,
+                                  inst.params.mem,
+                                  inst.params.disk) for inst in self._iter_instance() if inst.state_code != InstanceState.TEARDOWN],
+                                (0,0,0))
+
+        free_cores = cores_available - sum_cores
+        if free_cores < 0:
+            self._logger.warn('Error cores free with %d, fix to 0' % free_cores)
+            free_cores = 0
+
+        free_mem = mem_available - sum_mem
+        if free_mem < 0:
+            self._logger.warn('Error memory free with %d, fix to 0' % free_mem)
+            free_mem = 0
+        
+        free_disk = disk_available - sum_disk
+        if free_disk < 0:
+            self._logger.warn('Error disk free with %d, fix to 0' % free_disk)
+            free_disk = 0
+
+        res = NodeResource.new_instance("ok",
+                                        free_mem,
+                                        mem_available,
+                                        free_disk,
+                                        disk_available,
+                                        free_cores,
+                                        cores_available)
+                                                
         self._logger.debug('done')
-        return Result.new(0x0, "describe resources")
+        return Result.new(0x0, {'msg': "describe resources",
+                                'resource': res})
 
 
+                          
     def do_start_network(self):
         return Result.new(0xFFFF, "start network")
 

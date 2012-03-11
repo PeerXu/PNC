@@ -417,13 +417,19 @@ class Node(Controller):
         return "0.0.0.0"
         
     def _change_instance_state(self, inst, state):
+        self._logger.debug('invoked')
+        
         self._logger.debug("instance %s change to %s from %s" % \
                            (inst.instance_id, \
                             InstanceState.state_name(state), \
                             InstanceState.state_name(inst.state_code)))
         inst.state_code = state
+        
+        self._logger.debug('done')
     
     def _find_and_terminate_instance(self, instance_id, destroy):
+        self._logger.debug('invoked')
+
         idx = self._has_instance(instance_id)
         if idx == -1:
             # instance not found
@@ -467,7 +473,8 @@ class Node(Controller):
             else:
                 LOG_STR = "shutting down" + LOG_STR
         self._logger.warn(LOG_STR)
-        
+
+        self._logger.debug('done')
         return inst
     
     def _startup_reboot_instance_thread(self, inst):
@@ -529,6 +536,7 @@ class Node(Controller):
         return Result.new(0x0, 'power down')
 
     def do_terminate_instance(self, instance_id):
+        self._logger.info('invoked')
         
         with self._inst_lock:
             inst = self._find_and_terminate_instance(instance_id, 1)
@@ -537,19 +545,20 @@ class Node(Controller):
 
             if inst.state_code != InstanceState.TEARDOWN:
                 self._change_instance_state(inst, InstanceState.SHUTOFF)
-                
+        
+        self._logger.debug('done')
         return Result.new(0x0, 'terminate instance')
 
     def do_describe_instances(self, inst_ids=None):
+        self._logger.info('invoked')
 
         if inst_ids and not isinstance(inst_ids, list):
-            self._logger.error("error arguments with: " + inst_ids)
+            self._logger.warn("error arguments with: " + inst_ids)
             return Result.new(0xFFFF, {'msg': "error arguments"})
         
         rs = []
         
         with self._inst_lock:
-            #[rs.append(self._get_instance(inst_id)) for inst_id in inst_ids]
             if inst_ids == None:
                 [rs.append(inst) for inst in self._iter_global_instances()]
             else:
@@ -557,6 +566,7 @@ class Node(Controller):
                     inst = self._get_instance(inst_id)
                     inst and rs.append(inst)
 
+        self._logger.debug('done')
         return Result.new(0x0, {'msg': 'describe instances',
                                 'instances': rs})
 
@@ -569,6 +579,7 @@ class Node(Controller):
                         ramdisk_id, ramdisk_url, # should be set none
                         net_config, # data.NetConfig
                         user_id):
+        self._logger.info('invoked')
         
         self._inst_lock.acquire()
         idx = self._has_instance(instance_id)
@@ -600,6 +611,7 @@ class Node(Controller):
         
         self._startup_instance_thread(inst)
         
+        self._logger.debug('done')
         return Result.new(0x0, "run instance")
 
     def do_reboot_instance(self, instance_id):
@@ -617,6 +629,8 @@ class Node(Controller):
         return Result.new(0xFFFF, 'get console output')
 
     def do_describe_resource(self):
+        self._logger.info('invoked')
+
         sum_cores = sum_mem = sum_disk = 0
         
         for inst in self._iter_global_instances():
@@ -649,6 +663,7 @@ class Node(Controller):
                                              cores_free,
                                              self._nc_detail.config_max_cores)
         
+        self._logger.debug('done')
         return Result.new(0x0, {'msg': 'describe resource',
                                 'resource': res})
 

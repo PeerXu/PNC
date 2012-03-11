@@ -18,8 +18,8 @@ class ClusterTestCase(unittest.TestCase):
     img_path = '/opt/PNC/images/1.img'
     inst_mac_addr = '0b:ee:89:b0:7a:24'
 
-    testcase_list = ('test_on_add_node', 
-                     'test_on_run_instances', 
+    testcase_list = ('test_on_add_node',
+                     'test_on_run_instances',
                      'test_on_terminate_instances')
     
     def setUp(self):
