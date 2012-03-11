@@ -473,6 +473,7 @@ class Node(Controller):
     def _startup_reboot_instance_thread(self, inst):
         self._logger.debug("invoked")
         threading.Thread(target=self._reboot_instance_thread, args=(inst,)).start()
+        self._logger.debug("done")
 
     def _reboot_instance_thread(self, inst):
         self._logger.debug("invoked")

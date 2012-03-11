@@ -4,3 +4,8 @@
 images/*.img
 .emacs.desktop
 .emacs.desktop.*
+GRTAGS
+GPATH
+GSYMS
+GTAGS
+TAGS

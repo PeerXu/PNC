@@ -12,6 +12,7 @@ from common.data import ClusterDetail, ClusterResource, NodeResource, ClusterIns
 
 class Cluster(Controller):
     ADDR = config.CLUSTER_ADDR
+    
     def __init__(self, is_daemon=True):
         Controller.__init__(self, Cluster.ADDR, "cluster", config.CLUSTER_LOG, config.LOG_LEVEL, is_daemon)
         self._logger.info("initialze controller done")
@@ -151,7 +152,8 @@ class Cluster(Controller):
         
         try:
             node = utils.get_conctrller_object(insts[0].node.uri)
-            rs = node.do_describe_instances(inst_ids)
+            with self._nccall_sem:
+                rs = node.do_describe_instances(inst_ids)
             if rs['code']:
                 self._logger.warn('failed to reflash instances: %s' % str(inst_ids))
                 return
@@ -271,15 +273,15 @@ class Cluster(Controller):
     def _add_node_thread(self, nid, ip, port):
         self._logger.debug('invoked')
         node = utils.get_conctrller_object(utils.uri_generator(ip, port))
-        with self._nccall_sem:
-            try:
-                rs = node.do_describe_resource()
-                if rs['code'] != 0x0:
-                    self._logger.warn(rs.data['msg'])
-                    return
-            except Exception, err:
-                self._logger.warn(err)
+        try:
+            with self._nccall_sem:
+            rs = node.do_describe_resource()
+            if rs['code'] != 0x0:
+                self._logger.warn(rs.data['msg'])
                 return
+        except Exception, err:
+            self._logger.warn(err)
+            return
 
         res_data = rs['data']
         res_data.update({'uri': utils.uri_generator(ip, port),
@@ -401,17 +403,18 @@ class Cluster(Controller):
         node_server = utils.get_conctrller_object(res.uri)
 
         start_time = time.time()
-        #rs = Result()
+
         rs = {'code': 0xFFFF}
         while rs['code'] and (time.time() - start_time < config.CLUSTER_WAKE_THRESH):
-            rs = node_server.do_run_instance(instance_id,
-                                             reservation_id,
-                                             param_t,
-                                             image_id, image_url,
-                                             kernel_id, kernel_url,
-                                             ramdisk_id, ramdisk_url,
-                                             net_config,
-                                             user_id)
+            with self._nccall_sem:
+                rs = node_server.do_run_instance(instance_id,
+                                                 reservation_id,
+                                                 param_t,
+                                                 image_id, image_url,
+                                                 kernel_id, kernel_url,
+                                                 ramdisk_id, ramdisk_url,
+                                                 net_config,
+                                                 user_id)
             if rs['code']:
                 time.sleep(1)
         
@@ -531,7 +534,7 @@ class Cluster(Controller):
                 self._logger.info('terminate instances:', inst_ids)
                 ret = self._startup_terminate_instances(inst_ids)
                 if ret.code != 0x0:
-                    self._logger.error('failed to remove node %s, terminate vm failed' % (nid,))
+                    self._logger.warn('failed to remove node %s, terminate vm failed' % (nid,))
                     return Result.new(0xFFFF, 'failed to remove node %s' % (nid,))
 
         with self._res_lock:
@@ -549,6 +552,7 @@ class Cluster(Controller):
     def do_terminate_instances(self, inst_ids):
         self._logger.info('invoked')
         if not isinstance(inst_ids, list):
+            self._logger.warn('error arguments')
             return Result.new(0x0, {'msg': 'error arguments'})
 
         [self._find_and_terminate_instance(inst_id) for inst_id in inst_ids]
@@ -566,7 +570,8 @@ class Cluster(Controller):
 
         node = utils.get_conctrller_object(inst.node.uri)
         try:
-            rs = node.do_terminate_instance(inst_id)
+            with self._nccall_sem:
+                rs = node.do_terminate_instance(inst_id)
             if rs['code'] != 0:
                 self._logger.warn('failed to terminate instance %s on node %s' % (inst_id, inst.node.id))
                 return
@@ -596,7 +601,7 @@ class Cluster(Controller):
 
         # verify arguments
         if not verify_run_instances_arguments():
-            self._logger.error('error arguments')
+            self._logger.wran('error arguments')
             return Result.new(0xFFFF, 'failed to run instances')
         
         # setup NetConfig
@@ -617,17 +622,47 @@ class Cluster(Controller):
         return Result.new(0x0, "run instances")
 
 
-    def do_reboot_instances(self):
+    def do_reboot_instances(self, inst_ids):
+        self._logger.info('invoked')
+
+        if not isinstance(inst_ids, list):
+            self._logger.warn('error arguments')
+            return Result.new(0xFFFF, {'msg': 'error arguments'})
+        
+        [self._find_and_reboot_instance(inst_id) for inst_id in inst_ids]
+
+        self._logger.debug('done')
         return Result.new(0x0, "reboot instances")
 
+    def _find_and_reboot_instnce(self, inst_id):
+        self._logger.debug('invoked')
+
+        inst = self._get_instance(inst_id)
+        if inst == None:
+            self._logger.warn('instance %s do not exists on cluster' % inst_id)
+            return
+
+        node = utils.get_conctrller_object(inst.node.uri)
+        try:
+            with self._nccall_sem:
+                rs = node.do_reboot_instance(inst_id)
+            if rs['code'] != 0:
+                self._logger.warn('failed to reboot instance %s on node %s' % (inst_id, inst.node.id))
+                return
+        except:
+            self._logger.warn('failed to connect node %s' % inst.node.id)
+            return
+        
+        self._logger.debug('done')
 
     def do_get_console_output(self):
         return Result.new(0x0, "console output")
 
 
     def do_describe_resources(self):
-        res = ClusterResource()
-        
+        self._logger.info('invoked')
+
+        self._logger.debug('done')
         return Result.new(0x0, "describe resources")
 
 
