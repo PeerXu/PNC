@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import fcntl
 import StringIO
 import threading
 import re
@@ -105,6 +106,22 @@ class Lock():
         self._lock.release()
     def locked(self):
         return self._lock.locked()
+
+class DjangoLock():
+    def __init__(self, filename):
+        self.filename = filename
+        self.handle = open(filename, 'w')
+    def __del__(self):
+        self.handle and self.nadle.close()
+    def __enter__(self):
+        self.acquire()
+        return self
+    def __exit__(self):
+        self.release()
+    def acquire(self):
+        fcntl.flock(self.filename, fcntl.LOCK_EX)
+    def release(self):
+        fcntl.flock(self.filename, fcntl.LOCK_UN)
 
 class Semaphore():
     def __init__(self, max_sem=1):
