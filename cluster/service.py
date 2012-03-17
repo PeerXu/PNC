@@ -96,21 +96,21 @@ class Cluster(Controller):
         while True:
             self._logger.debug("wake up")
             with self._res_lock:
-                self._reflash_node_resources()
-                self._reflash_cluster_detail()
+                self._refresh_node_resources()
+                self._refresh_cluster_detail()
             with self._inst_lock:
-                self._reflash_instances()
+                self._refresh_instances()
             self._logger.debug("sleep")
             time.sleep(config.CLUSTER_MONITOR_INTERVAL)
 
 
-    def _reflash_node_resources(self):
+    def _refresh_node_resources(self):
         self._logger.debug("invoked")
-        [self._reflash_node_resource(res) for res in self._iter_node()]
+        [self._refresh_node_resource(res) for res in self._iter_node()]
         self._logger.debug("done")
 
-    def _reflash_cluster_detail(self):
-        def reflash():
+    def _refresh_cluster_detail(self):
+        def refresh():
             self._cc_detail.config_max_cores += res.number_cores_available
             self._cc_detail.config_max_mem += res.mem_size_available
             self._cc_detail.config_max_disk += res.disk_size_available
@@ -126,23 +126,23 @@ class Cluster(Controller):
         detail.sched_state = self._cc_detail.sched_state
         self._cc_detail = detail
         
-        [reflash() for res in self._iter_node()]
+        [refresh() for res in self._iter_node()]
         
         self._logger.debug('done')
 
-    def _reflash_instances(self):
+    def _refresh_instances(self):
         self._logger.debug("invoked")
-#        [self._reflash_instance(inst) for inst in self._iter_instance()]
-        reflash_map = {}
+#        [self._refresh_instance(inst) for inst in self._iter_instance()]
+        refresh_map = {}
         for inst in self._iter_instance():
-            if not reflash_map.has_key(inst.node):
-                reflash_map[inst.node] = []
-            reflash_map[inst.node].append(inst)
-        [self._reflash_instances_by_list(insts) for insts in reflash_map.values()]
+            if not refresh_map.has_key(inst.node):
+                refresh_map[inst.node] = []
+            refresh_map[inst.node].append(inst)
+        [self._refresh_instances_by_list(insts) for insts in refresh_map.values()]
         self._logger.debug("done")
 
 
-    def _reflash_instances_by_list(self, insts):
+    def _refresh_instances_by_list(self, insts):
 
         if not isinstance(insts, list) or len(insts) == 0:
             return
@@ -155,7 +155,7 @@ class Cluster(Controller):
             with self._nccall_sem:
                 rs = node.do_describe_instances(inst_ids)
             if rs['code']:
-                self._logger.warn('failed to reflash instances: %s' % str(inst_ids))
+                self._logger.warn('failed to refresh instances: %s' % str(inst_ids))
                 return
         except:
             self._logger.warn('failed to connect node %s' % insts[0].node.uri)
@@ -167,7 +167,7 @@ class Cluster(Controller):
             new_inst = Instance(data_inst)
             new_instances_map[new_inst.instance_id] = new_inst
 
-        [self._reflash_instance(inst, new_instances_map.get(inst.instance_id, None)) for inst in insts]
+        [self._refresh_instance(inst, new_instances_map.get(inst.instance_id, None)) for inst in insts]
         
 
     def _change_node_status(self, res, status):
@@ -177,7 +177,7 @@ class Cluster(Controller):
         self._logger.debug('done')
 
 
-    def _reflash_node_resource(self, res):
+    def _refresh_node_resource(self, res):
         self._logger.debug("invoked.")
 
         node = utils.get_conctrller_object(res.uri)
@@ -190,22 +190,26 @@ class Cluster(Controller):
                 return
             
             new_res = NodeResource(rs['data']['resource'])
-            
-            self._change_node_status(res, new_res.node_status)
-            res.node_status = new_res.node_status
-            res.mem_size_max = new_res.mem_size_max
-            res.mem_size_available = new_res.mem_size_available
-            res.disk_size_max = new_res.disk_size_max
-            res.disk_size_available = new_res.disk_size_available
-            res.number_cores_max = new_res.number_cores_max
-            res.number_cores_available = new_res.number_cores_available
+
+            node_res = self._get_node(res.id)
+            if not node_res:
+                raise
+
+            self._change_node_status(node_res, new_res.node_status)
+            node_res.node_status = new_res.node_status
+            node_res.mem_size_max = new_res.mem_size_max
+            node_res.mem_size_available = new_res.mem_size_available
+            node_res.disk_size_max = new_res.disk_size_max
+            node_res.disk_size_available = new_res.disk_size_available
+            node_res.number_cores_max = new_res.number_cores_max
+            node_res.number_cores_available = new_res.number_cores_available
         except:
             self._change_node_status(res, 'error')
 
         self._logger.debug("done")
 
 
-    def _reflash_instance(self, inst, new_inst):
+    def _refresh_instance(self, inst, new_inst):
         self._logger.debug('invoked')
 
         if not new_inst:
@@ -214,7 +218,7 @@ class Cluster(Controller):
                                                                           inst.node.id))
             return
 
-        self._logger.info('reflash instance %s' % inst.instance_id)
+        self._logger.info('refresh instance %s' % inst.instance_id)
 
         self._change_instance_state(inst, new_inst.state_code)
         inst.net = new_inst.net
@@ -677,7 +681,7 @@ class Cluster(Controller):
         return Result.new(0x0, "console output")
 
 
-    def do_describe_resources(self):
+    def do_describe_resource(self):
         self._logger.info('invoked')
 
         with self._res_lock:
