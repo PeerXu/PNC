@@ -71,14 +71,14 @@ class Socket(models.Model):
 class Node(models.Model):
     name = models.CharField(max_length=255, unique=True)
     state = models.ForeignKey(State)
-    config_max_disk = models.IntegerField(max_length=255)
-    disk_max = models.IntegerField(max_length=255)
-    config_max_mem = models.IntegerField(max_length=255)
-    mem_max = models.IntegerField(max_length=255)
-    config_max_cores = models.IntegerField(max_length=255)
-    cores_max = models.IntegerField(max_length=255)
     instances = models.ManyToManyField(Instance, blank=True, null=True)
     socket = models.ForeignKey(Socket)
+    config_max_disk = models.IntegerField(max_length=255, default=0, editable=False)
+    disk_max = models.IntegerField(max_length=255, default=0, editable=False)
+    config_max_mem = models.IntegerField(max_length=255, default=0, editable=False)
+    mem_max = models.IntegerField(max_length=255, default=0, editable=False)
+    config_max_cores = models.IntegerField(max_length=255, default=0, editable=False)
+    cores_max = models.IntegerField(max_length=255, default=0, editable=False)
 
     def __unicode__(self):
         return self.name
@@ -88,6 +88,12 @@ class Cluster(models.Model):
     state = models.ForeignKey(State)
     nodes = models.ManyToManyField(Node, blank=True, null=True)
     socket = models.ForeignKey(Socket)
+    config_max_disk = models.IntegerField(max_length=255, default=0, editable=False)
+    disk_max = models.IntegerField(max_length=255, default=0, editable=False)
+    config_max_mem = models.IntegerField(max_length=255, default=0, editable=False)
+    mem_max = models.IntegerField(max_length=255, default=0, editable=False)
+    config_max_cores = models.IntegerField(max_length=255, default=0, editable=False)
+    cores_max = models.IntegerField(max_length=255, default=0, editable=False)
     
     def __unicode__(self):
         return self.name

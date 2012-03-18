@@ -126,7 +126,7 @@ class Cluster(Controller):
         detail.sched_state = self._cc_detail.sched_state
         self._cc_detail = detail
         
-        [refresh() for res in self._iter_node()]
+        [refresh() for res in self._iter_running_node()]
         
         self._logger.debug('done')
 
@@ -283,14 +283,17 @@ class Cluster(Controller):
             if rs['code'] != 0x0:
                 self._logger.warn(rs.data['msg'])
                 return
+            res_data = rs['data']
+            res_data.update({'uri': utils.uri_generator(ip, port),
+                             'id': nid})
+            res = ClusterResource(rs['data'])
         except Exception, err:
             self._logger.warn(err)
-            return
+            res = ClusterResource()
+            res.uri = utils.uri_generator(ip, port)
+            res.id = nid
+            res.node_status = 'error'
 
-        res_data = rs['data']
-        res_data.update({'uri': utils.uri_generator(ip, port),
-                         'id': nid})
-        res = ClusterResource(rs['data'])
 
         with self._res_lock:
             if self._has_node(nid) != -1:
@@ -517,7 +520,6 @@ class Cluster(Controller):
         self._logger.debug('done')
         return Result.new(0x0, {'msg': 'add node %s' % (nid,)})
 
-
     def do_remove_node(self, nid, force=False):
         self._logger.info('invoked')
         with self._res_lock:
@@ -548,6 +550,19 @@ class Cluster(Controller):
         self._logger.debug('done')
         return Result.new(0x0, "remove node %s" % nid)
 
+    def do_describe_node(self, nids=None):
+        self._logger.info('invoked')
+
+        if not nids:
+            nids = [node.id for node in self._iter_node()]
+        
+        ress = []
+        [ress.append(node) for node in [self._get_node(nid) for nid in nids] if node != None]
+
+        self._logger.debug('done')
+
+        return Result.new(0x0, {'msg': 'describe node',
+                                'resources': ress})
 
     def do_power_down(self):
         return Result.new(0x0, "power down")
@@ -681,7 +696,7 @@ class Cluster(Controller):
         return Result.new(0x0, "console output")
 
 
-    def do_describe_resource(self):
+    def do_describe_resources(self):
         self._logger.info('invoked')
 
         with self._res_lock:
