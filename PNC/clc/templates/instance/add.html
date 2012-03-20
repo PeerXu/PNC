@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block title %}PNC 云平台 -- 添加虚拟机{% endblock %}
+
+{% block content %}
+<h1>添加虚拟机</h1>
+<form action="" method="POST">
+  {% csrf_token %}
+  <input type="text" placeholder="name" name="name"><br>
+  <input type="text" placeholder="image" name="image"><br>
+  <input type="text" placeholder="memory" name="memory"><br>
+  <input type="text" placeholder="cores" name="cores"><br>
+  <input type="text" hidden="true" name="username" value="{{ user.username }}">
+  <input type="submit" value="submit">
+</form>
+{% endblock %}
