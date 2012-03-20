@@ -17,6 +17,9 @@ urlpatterns = patterns('',
     ('^login$', "clc.views.view_login"),
     ('^logout$', "clc.views.view_logout"),
     ('^demo/hello', "clc.views.view_hello"),
+    # INSTANCE
     ('^instance/add', "clc.views.view_add_instance"),
+    # IMAGE
+    ('^image/add', "clc.views.view_add_image"),
 #    ('^demo/base', TemplateView.as_view(template_name='base.html')),
 )

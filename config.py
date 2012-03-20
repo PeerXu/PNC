@@ -58,52 +58,6 @@ STANDARD_XML="""
 </domain>
 """
 
-#STANDARD_XML = """
-#<domain type='kvm'>
-#  <name>{{ NAME }}</name>
-#  <uuid>{{ UUID }}</uuid>
-#  <memory>{{ MEMORY }}</memory>
-#  <currentMemory>{{ CURRENTMEMORY }}</currentMemory>
-#  <vcpu>{{ VCPU }}</vcpu>
-#  <os>
-#    <type arch='x86_64' machine='pc-0.12'>hvm</type>
-#    <boot dev='hd'/>
-#  </os>
-#  <features>
-#    <acpi/>
-#    <apic/>
-#    <pae/>
-#  </features>
-#  <clock offset='utc'/>
-#  <on_poweroff>destroy</on_poweroff>
-#  <on_reboot>restart</on_reboot>
-#  <on_crash>restart</on_crash>
-#  <devices>
-#    <emulator>/usr/bin/kvm</emulator>
-#    <disk type='file' device='disk'>
-#      <driver name='qemu' type='qcow2' cache='writeback'/>
-#      <source file='{{ DISK_SOURCE_FILE }}'/>
-#      <target dev='{{ DISK_TARGET_DEV }}' bus='ide'/>
-#    </disk>
-#    <interface type='network'>
-#      <source network='default'/>
-#      <mac address='{{ MAC_ADDRESS }}'/>
-#    </interface>
-#    <console type='pty'>
-#      <target port='0'/>
-#    </console>
-#    <console type='pty'>
-#      <target port='0'/>
-#    </console>
-#    <input type='mouse' bus='ps2'/>
-#    <graphics type='vnc' port='-1' autoport='yes' keymap='en-us'/>
-#    <video>
-#      <model type='cirrus' vram='9216' heads='1'/>
-#    </video>
-#  </devices>
-#</domain>
-#"""
-
 #
 # PATH
 #
@@ -112,6 +66,8 @@ HOME_PATH = "/opt/PNC/"
 TOOLS_PATH = HOME_PATH + "tools/"
 
 LOG_PATH = HOME_PATH + "log/"
+
+IMAGE_PATH = HOME_PATH + "images/"
 
 #
 #  LOG

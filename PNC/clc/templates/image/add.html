@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+
+{% block title %}PNC 云平台 -- 添加镜像{% endblock %}
+
+{% block content %}
+<h1>添加镜像</h1>
+<form action="" method="POST">
+  {% csrf_token %}
+  <input type="text" placeholder="name" name="name"><br>
+  <input type="text" placeholder="system type(linux or windows or others)" name="type"><br>
+  <input type="text" placeholder="physics name(*.img)" name="phyname"><br>
+  <input type="submit" value="submit">
+</form>
+{% endblock %}

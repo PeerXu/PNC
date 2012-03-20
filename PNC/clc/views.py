@@ -1,3 +1,5 @@
+import sys; sys.path.append('/opt/PNC'); del sys
+
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
@@ -7,6 +9,7 @@ from django.shortcuts import render_to_response
 from django.template import RequestContext
 
 from clc.models import Image, Kernel, Ramdisk, NetConfig, Instance, VirtualMachine, State
+import config
 
 def view_hello(request):
     return render_to_response('hello_world.html')
@@ -75,3 +78,28 @@ def view_add_instance(request):
 
     return HttpResponseRedirect("/clc")
 
+def view_add_image(request):
+    if request.method != 'POST':
+        return render_to_response('image/add.html', context_instance=RequestContext(request, {}))
+
+    try:
+        name = request.POST['name']
+        sys_type = request.POST['type']
+        phy_name = request.POST['phyname']
+        if not phy_name.endswith('.img'):
+            raise Exception, 'error physics name'
+    except Exception, ex:
+        print ex
+        return render_to_response('image/add.html', context_instance=RequestContext(request, {}))
+
+    img_id = 'img-%s-%s-%s' % (name, sys_type, phy_name[:-4])
+    if len(Image.objects.filter(image_id=img_id)) != 0:
+        return render_to_response('image/add.html', context_instance=RequestContext(request, {}))
+
+    Image.objects.create(image_id=img_id,
+                         remote_dev='',
+                         local_dev=phy_name,
+                         local_dev_real=config.IMAGE_PATH+phy_name,
+                         state=State.objects.get(name='active'))
+    
+    return HttpResponseRedirect("/clc")
