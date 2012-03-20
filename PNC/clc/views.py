@@ -8,7 +8,6 @@ from django.template import RequestContext
 
 from clc.models import Image, Kernel, Ramdisk, NetConfig, Instance, VirtualMachine, State
 
-
 def view_hello(request):
     return render_to_response('hello_world.html')
 
@@ -40,7 +39,9 @@ def view_logout(request):
     return HttpResponseRedirect("/clc")
 
 def _mac_gen():
-    return "ee:ee:ee:ee:ee:ee"
+    import time, random, hashlib
+    digest = (hashlib.md5(str(time.time())+str(random.randint(0,255)).zfill(3)).hexdigest()[random.randint(0,26):][:6]).upper()
+    return config.INSTANCE_MAC_PREFIX + ':'.join([''] + reduce(lambda x, acc: (x[0][2:], x[1] + [x[0][:2]]), xrange(len(digest)/2), (digest, []))[1])
 
 def view_add_instance(request):
     if request.method != "POST":
