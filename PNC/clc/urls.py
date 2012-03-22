@@ -20,6 +20,7 @@ urlpatterns = patterns('',
     # INSTANCE
     ('^instance/add', "clc.views.view_add_instance"),
     # IMAGE
+    ('^image$', 'clc.views.view_image'),
     ('^image/add', "clc.views.view_add_image"),
 #    ('^demo/base', TemplateView.as_view(template_name='base.html')),
 )

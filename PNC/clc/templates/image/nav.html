@@ -1,3 +1,4 @@
+{% url clc.views.view_add_image as add_image_url %}
 <style type="text/css">
 #nb {
   font: 13px/27px Arial, sans-serif;
@@ -23,16 +24,10 @@
 <div id="nb">
   <ul>
     <li>
-      <a href="#"><span class="nbzt">用户管理</span></a>
+      <a href="{{ add_image_url }}"><span class="nbzt">添加镜像</span></a>
     </li>
     <li>
-      <a href="/clc/instance/add"><span class="nbzt">虚拟机管理</span></a>
-    </li>
-    <li>
-      <a href="/clc/image"><span class="nbzt">镜像管理</span></a>
-    </li>
-    <li>
-      <a href="#"><span class="nbzt">资源监控</span></a>
+      <a href="#"><span class="nbzt">删除镜像</span></a>
     </li>
   </ul>
 </div>

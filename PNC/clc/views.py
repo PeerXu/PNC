@@ -78,6 +78,9 @@ def view_add_instance(request):
 
     return HttpResponseRedirect("/clc")
 
+def view_image(request):
+    return render_to_response('image/index.html', context_instance=RequestContext(request, {}))
+
 def view_add_image(request):
     if request.method != 'POST':
         return render_to_response('image/add.html', context_instance=RequestContext(request, {}))
