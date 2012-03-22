@@ -1,5 +1,4 @@
-{% url clc.views.view_instance as instance_url %}
-{% url clc.views.view_image as image_url %}
+{% url clc.views.view_add_instance as add_instance_url %}
 <style type="text/css">
 #nb {
   font: 13px/27px Arial, sans-serif;
@@ -25,16 +24,12 @@
 <div id="nb">
   <ul>
     <li>
-      <a href="#"><span class="nbzt">用户管理</span></a>
+      <a href="{{ add_instance_url }}"><span class="nbzt">添加虚拟机</span></a>
     </li>
+  </ul>
+  <ul>
     <li>
-      <a href="{{ instance_url }}"><span class="nbzt">虚拟机管理</span></a>
-    </li>
-    <li>
-      <a href="{{ image_url }}"><span class="nbzt">镜像管理</span></a>
-    </li>
-    <li>
-      <a href="#"><span class="nbzt">资源监控</span></a>
+      <a href="#"><span class="nbzt">删除虚拟机</span></a>
     </li>
   </ul>
 </div>

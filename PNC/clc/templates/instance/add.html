@@ -1,9 +1,9 @@
-{% extends "base.html" %}
+{% extends "instance/base.html" %}
 
 {% block title %}PNC 云平台 -- 添加虚拟机{% endblock %}
 
-{% block content %}
-<h1>添加虚拟机</h1>
+{% block instance_content %}
+<h2>添加虚拟机</h2>
 <form action="" method="POST">
   {% csrf_token %}
   <input type="text" placeholder="name" name="name"><br>
