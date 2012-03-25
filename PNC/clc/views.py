@@ -8,8 +8,16 @@ from django.http import HttpResponseRedirect
 from django.shortcuts import render_to_response
 from django.template import RequestContext
 
-from clc.models import Image, Kernel, Ramdisk, NetConfig, Instance, VirtualMachine, State
+from clc.models import Cloud, Cluster, Image, Kernel, Ramdisk, NetConfig, Instance, VirtualMachine, State
+
+from common import utils
 import config
+
+STATE = {}
+map(lambda x: STATE.setdefault(x.name.upper(), x), State.objects.all())
+
+CLOUD = Cloud.objects.get(name='default')
+CONFIG = CLOUD.config
 
 def view_hello(request):
     return render_to_response('hello_world.html')
@@ -71,23 +79,130 @@ def view_add_instance(request):
                                 params=params,
                                 net=NetConfig.objects.create(ip="0.0.0.0",
                                                              mac=_mac_gen()),
-                                state=State.objects.get(name='stop'),)
+                                state=STATE['STOP'],)
     except Exception, ex:
         params.delete()
-        return render_to_response('instance/add.html', context_instance=RequestContext(request, {}))
+        return render_to_response('instance/add.html',
+                                  context_instance=RequestContext(request, {}))
 
     return HttpResponseRedirect("/clc")
 
+
 def view_image(request):
-    return render_to_response('image/index.html', context_instance=RequestContext(request, {}))
+    return render_to_response('image/index.html',
+                              context_instance=RequestContext(request, {}))
+
 
 def view_instance(request):
-    return render_to_response('instance/index.html', context_instance=RequestContext(request, {}))
+    return render_to_response('instance/index.html',
+                              context_instance=RequestContext(request, {}))
+
+
+def _schedule_instance(inst, nid=None):
+    schedule = CONFIG.schedule.name
+    schedule_name = '_schedule_instance_' + schedule
+    try:
+        _schedule_instance = globals()[schedule_name]
+    except Exception, ex:
+        print ex
+        raise ex
+    return _schedule_instance(inst.params, nid)
+
+def _cluster_resource_point(cluster):
+    return cluster.cores_max * config.CORES_POINT_PER_COUNT + cluster.mem_max * config.MEMORY_POINT_PER_MB + cluster.disk_max * config.DISK_POINT_PER_MB
+
+def _verify_resource(params, cluster):
+    lacks = []
+    if cluster.cores_max < params.cores:
+        lacks.append('cores')
+    if cluster.mem_max < params.mem:
+        lacks.append('memory')
+    if cluster.disk_max < params.disk:
+        lacks.append('disk')
+    return lacks
+
+def _schedule_instance_by_verify(verify):
+    def warpper(params, _=None):
+        point = 0
+        perfect_res = None
+        for cluster in Cluster.objects.filter(state=STATE['RUNNING']):
+            if not _verify_resource(params, cluster):
+                cur_point = _cluster_resource_point(cluster)
+                if not perfect_res or verify(cur_point, point):
+                    point = cur_point
+                    perfect_res = cluster
+        return perfect_res and perfect_res or None
+    return warpper
+
+def _schedule_instance_greed(params, _=None):
+    _schedule_instance_greed = _schedule_instance_by_verify(lambda x, y: x<y)
+    return _schedule_instance_greed(params, _)
+
+def _schedule_instance_default(params, _=None):
+    return _schedule_instance_greed(params)
+
+def _schedule_instance_smart(params, _=None):
+    _schedule_instance_smart = _schedule_instance_by_verify(lambda x, y: x>y)
+    return _schedule_instance_smart(params, _)
+
+def _schedule_instance_explicit(params, nid):
+    return reduce(lambda x, xa: x and x or (reduce(lambda y, ya: y and y or (ya.name == nid and xa or None), xa.nodes.lal(), None)), Cluster.objects.filter(state=STATE['RUNNING']), None)
+
+def view_start_instance(request):
+    if request.method != "POST":
+        return render_to_response('instance/start.html', 
+                                  context_instance=RequestContext(request, {}))
+    args_dict = request.POST
+    name = args_dict.get('name', None)
+    if name == None:
+        return render_to_response('instance/start.html', 
+                                  context_instance=RequestContext(request, {}))
+
+    try:
+        inst = Instance.objects.get(instance_id=name)
+    except:
+        return render_to_response('instance/start.html', 
+                                  context_instance=RequestContext(request, {}))
+
+    current_user = auth.get_user(request)
+    if not inst.user.username == current_user.username:
+        return render_to_response('instance/start.html', 
+                                  context_instance=RequestContext(request, {}))
+
+    # send start instance message to cc
+    cc_name = _schedule_instance(inst)
+    if cc_name == None:
+        return render_to_response('instance/start.html',
+                                  context_instance=RequestContext(request, {}))
+
+    cc = Cluster.objects.get(name=cc_name)
+
+    cc_server = utils.get_conctrller_object(utils.uri_generator(cc.socket.ip,
+                                                                cc.socket.port))
+
+    rs = cc_server.do_run_instances([inst.instance_id],
+                                    None,
+                                    inst.user_id,
+                                    {'cores': inst.params.cores,
+                                     'mem': inst.params.mem,
+                                     'disk': inst.params.disk},
+                                    inst.image.image_id, inst.image.local_dev_real,
+                                    None, None,
+                                    None, None,
+                                    [inst.net.ip],
+                                    None)
+
+    if rs['code'] != 0:
+        return render_to_response('instance/start.html',
+                                  context_instance=RequestContext(request, {}))
+
+    return HttpResponseRedirect("/clc/instance")
 
 
 def view_add_image(request):
     if request.method != 'POST':
-        return render_to_response('image/add.html', context_instance=RequestContext(request, {}))
+        return render_to_response('image/add.html', 
+                                  context_instance=RequestContext(request, {}))
 
     try:
         name = request.POST['name']
@@ -97,16 +212,18 @@ def view_add_image(request):
             raise Exception, 'error physics name'
     except Exception, ex:
         print ex
-        return render_to_response('image/add.html', context_instance=RequestContext(request, {}))
+        return render_to_response('image/add.html', 
+                                  context_instance=RequestContext(request, {}))
 
     img_id = 'img-%s-%s-%s' % (name, sys_type, phy_name[:-4])
     if len(Image.objects.filter(image_id=img_id)) != 0:
-        return render_to_response('image/add.html', context_instance=RequestContext(request, {}))
+        return render_to_response('image/add.html', 
+                                  context_instance=RequestContext(request, {}))
 
     Image.objects.create(image_id=img_id,
                          remote_dev='',
                          local_dev=phy_name,
                          local_dev_real=config.IMAGE_PATH+phy_name,
-                         state=State.objects.get(name='active'))
+                         state=STATE['ACTIVE'])
     
     return HttpResponseRedirect("/clc")

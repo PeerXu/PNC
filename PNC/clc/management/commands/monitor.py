@@ -3,7 +3,7 @@ import time
 
 from django.core.management.base import BaseCommand, CommandError
 
-from clc.models import Cluster, State, Socket
+from clc.models import Cluster, Instance, State, Socket
 from common import utils
 
 
@@ -32,7 +32,7 @@ class Command(BaseCommand):
         # add node to cluster
         server = self._cluster_server(cluster)
         try:
-            map(lambda x: server.do_add_node(*x), map(lambda x: (x.name, x.socket.ip, x.socket.port), cluster.nodes.all()))
+            map(lambda x: server.do_add_node(x.name, x.socket.ip, x.socket.port), cluster.nodes.all())
         except:
             self.stdout.write('[WARNNING]: cluster %s not found\n' % cluster.name)
             return
@@ -65,19 +65,16 @@ class Command(BaseCommand):
         cluster.mem_max = res['mem_size_max']
         cluster.config_max_disk = res['disk_size_available']
         cluster.disk_max = res['disk_size_max']
-
-#        self.stdout.write(str(rs['data']['resource']) + '\n')
+        cluster.save()
 
         map(lambda x: self._refresh_node(*x), [(cluster, node) for node in cluster.nodes.all()])
 
 
     def _refresh_node(self, cluster, node):
+
         self.stdout.write('[INFO]: refresh node %s\n' % node.name)
-
         state = node.state.name
-
-        cc_server = utils.get_conctrller_object(utils.uri_generator(cluster.socket.ip,
-                                                                    cluster.socket.port))
+        cc_server = self._cluster_server(cluster)
         try:
             rs = cc_server.do_describe_node([node.name])
             if rs['code'] != 0:
@@ -93,11 +90,11 @@ class Command(BaseCommand):
         
         if len(ress) == 0:
             self.stdout.write('[WARNNING]: node %s not found\n' % node.name)
+            cc_server.do_add_node(node.name, node.socket.ip, node.socket.port)
             return
 
         res = ress[0]
         if res['node_status'] == 'ok':
-#            import pdb; pdb.set_trace()
             # refresh node detail
             node.config_max_cores = res['number_cores_available']
             node.config_max_mem = res['mem_size_available']
@@ -106,12 +103,45 @@ class Command(BaseCommand):
             node.mem_max = res['mem_size_max']
             node.disk_max = res['disk_size_max']
             node.save()
+        else:
+            try:
+                cc_server.do_remove_node(node.name, True)
+            except Exception, ex:
+                print ex
 
-        map(self._refresh_instance, node.instances.all())
+        # update instance id to node
+        rs = cc_server.do_describe_instances(None)
+        insts = [ inst for inst in rs['data']['instances'] if inst['node']['id'] == node.name]
+
+        for i in xrange(len(insts)):
+            inst_dict = insts[i]
+            inst_id = inst_dict['instance_id']
+            try:
+                inst_obj = Node.instances.get(instance_id=inst_id)
+            except:
+                inst_obj = Instance.objects.get(instance_id=inst_id)
+                node.instances.add(inst_obj)
+
+        map(lambda x: self._refresh_instance(cluster, node, x), node.instances.all())
         
-    def _refresh_instance(self, inst):
+    def _refresh_instance(self, cluster, node, inst):
         # to be continue
+        cc_server = self._cluster_server(cluster)
+
+        rs = cc_server.do_describe_instances([inst.instance_id])
+
+        if rs['code'] != 0 or len(rs['data']['instances']) == 0:
+            node.instances.remove(inst)
+            node.save()
+            self.stdout.write('[WARRING]: instance %s not found, remove it\n' % inst.instance_id)
+
+        inst_data = rs['data']['instances'][0]
+
+        print inst_data
+
         self.stdout.write('[INFO]: refresh instance %s\n' % inst.instance_id)
+
+        
 
     def handle(self, *args, **kwargs):
         while True:

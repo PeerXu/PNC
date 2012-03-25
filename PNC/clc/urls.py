@@ -18,10 +18,11 @@ urlpatterns = patterns('',
     ('^logout$', "clc.views.view_logout"),
     ('^demo/hello', "clc.views.view_hello"),
     # INSTANCE
-    ('^instance$', "clc.views.view_instance"),
+    ('^instance/$', "clc.views.view_instance"),
+    ('^instance/start', "clc.views.view_start_instance"),
     ('^instance/add', "clc.views.view_add_instance"),
     # IMAGE
-    ('^image$', 'clc.views.view_image'),
+    ('^image/$', 'clc.views.view_image'),
     ('^image/add', "clc.views.view_add_image"),
 #    ('^demo/base', TemplateView.as_view(template_name='base.html')),
 )

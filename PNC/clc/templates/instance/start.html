@@ -1,0 +1,15 @@
+{% extends "instance/base.html" %}
+
+{% block title %}PNC 云平台 -- 启动虚拟机{% endblock %}
+
+{% block instance_content %}
+
+<h2>启动虚拟机</h2>
+
+<form action="" method="POST">
+  {% csrf_token %}
+  <input type="text" placeholder="name" name="name" value="inst-root-arch-1"><br>
+  <input type="submit" value=" start ">
+</form>
+
+{% endblock %}

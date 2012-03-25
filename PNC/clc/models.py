@@ -133,9 +133,24 @@ class Cluster(models.Model):
     def __unicode__(self):
         return self.name
 
+class Schedule(models.Model):
+    name = models.CharField(max_length=255, unique=True)
+    description = models.CharField(max_length=255, blank=True, null=True)
+    
+    def __unicode__(self):
+        return self.name
+
+class Config(models.Model):
+    name = models.CharField(max_length=255, unique=True)
+    schedule = models.ForeignKey(Schedule)
+
+    def __unicode__(self):
+        return self.name
+
 class Cloud(models.Model):
     name = models.CharField(max_length=255, unique=True)
     state = models.ForeignKey(State)
+    config = models.ForeignKey(Config)
     clusters = models.ManyToManyField(Cluster, blank=True, null=True)
     terminated_instances = models.ManyToManyField(Instance, blank=True, null=True)
 

@@ -138,6 +138,7 @@ class Cluster(Controller):
             if not refresh_map.has_key(inst.node):
                 refresh_map[inst.node] = []
             refresh_map[inst.node].append(inst)
+#        import pdb; pdb.set_trace()
         [self._refresh_instances_by_list(insts) for insts in refresh_map.values()]
         self._logger.debug("done")
 
@@ -219,7 +220,8 @@ class Cluster(Controller):
             return
 
         self._logger.info('refresh instance %s' % inst.instance_id)
-
+        
+#        import pdb; pdb.set_trace()
         self._change_instance_state(inst, new_inst.state_code)
         inst.net = new_inst.net
         inst.volumes = new_inst.volumes
@@ -229,10 +231,10 @@ class Cluster(Controller):
 
     def _change_instance_state(self, inst, state):
         self._logger.debug('invoked')
+        inst.state_code = state
         self._logger.info('change instance %s state from %s to %s' % (inst.instance_id,
                                                                       InstanceState.state_name(inst.state_code),
                                                                       InstanceState.state_name(state)))
-        inst.state_code = InstanceState.NOSTATE
         self._logger.debug('done')
 
 
@@ -330,7 +332,7 @@ class Cluster(Controller):
     def _get_instances_on_node(self, nid):
         self._logger.debug('invoked')
         inst_instances = []
-        [inst_instances.append(inst) for inst in self._iter_node() if inst.node.id == nid]
+        [inst_instances.append(inst) for inst in self._iter_instance() if inst.node.id == nid]
         self._logger.debug('done')
         return inst_instances
 
@@ -532,16 +534,19 @@ class Cluster(Controller):
                     return Result.new(0xFFFF, 'failed to remove node %s' % (nid,))
             else:
                 # if force is true, find all instance which is running on node
-                insts = self._get_instance_on_node(nid)
+                insts = self._get_instances_on_node(nid)
                 inst_ids = [inst.instance_id for inst in insts]
-        
-        if force:
-            with self._nccall_sem:
-                self._logger.info('terminate instances:', inst_ids)
-                ret = self._startup_terminate_instances(inst_ids)
-                if ret.code != 0x0:
-                    self._logger.warn('failed to remove node %s, terminate vm failed' % (nid,))
-                    return Result.new(0xFFFF, 'failed to remove node %s' % (nid,))
+
+        if inst_ids:
+            if force:
+                with self._nccall_sem:
+                    self._logger.info('terminate instances: %s' % inst_ids)
+                    ret = self._startup_terminate_instances(inst_ids)
+                    if ret.code != 0x0:
+                        self._logger.warn('failed to remove node %s, terminate vm failed' % (nid,))
+                        return Result.new(0xFFFF, 'failed to remove node %s' % (nid,))
+            else:
+                return Result.new(0xFFFF, 'failed to remove node %s' % (nid,))
 
         with self._res_lock:
             self._logger.info('remove node %s' % nid)
@@ -549,6 +554,7 @@ class Cluster(Controller):
             
         self._logger.debug('done')
         return Result.new(0x0, "remove node %s" % nid)
+
 
     def do_describe_node(self, nids=None):
         self._logger.info('invoked')
@@ -600,7 +606,7 @@ class Cluster(Controller):
 
         self._logger.debug('done')
 
-    def do_describe_instances(self, inst_ids):
+    def do_describe_instances(self, inst_ids=None):
         self._logger.info('invoked')
 
         if inst_ids and  not isinstance(inst_ids, list):
@@ -656,7 +662,7 @@ class Cluster(Controller):
                                            target_node_id)
                 
         self._logger.debug('done')
-        return Result.new(0x0, "run instances")
+        return Result.new(0x0, {'msg': "run instances"})
 
 
     def do_reboot_instances(self, inst_ids):

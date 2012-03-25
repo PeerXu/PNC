@@ -148,7 +148,7 @@ class Node(Controller):
             now = time.time()            
             self._logger.debug("monitor thread running...")
             self._inst_lock.acquire()
-            
+
             for inst in self._iter_global_instances():
                 self._refresh_instance_detail(inst)
                 
@@ -182,12 +182,11 @@ class Node(Controller):
             self._logger.debug("sleep")
             time.sleep(config.NODE_MONITOR_INTERVAL)
             
-    def _add_instance(self, inst):        
+    def _add_instance(self, inst):
         if self._has_instance(inst.instance_id) != -1:
             self._logger.warn("failed to add instance %s, %s in instance list." % (inst.instance_id,
                                                                                    inst.instance_id))
             return
-        
         self._global_instances.append(inst)
         self._logger.debug("add instance %s" % (inst.instance_id,))
     
