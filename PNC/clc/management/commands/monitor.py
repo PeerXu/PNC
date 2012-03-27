@@ -5,8 +5,6 @@ from django.core.management.base import BaseCommand, CommandError
 
 from clc.models import Cluster, Instance, State, Socket
 from common import utils
-
-
     
 
 class Command(BaseCommand):
@@ -135,9 +133,18 @@ class Command(BaseCommand):
             node.save()
             self.stdout.write('[WARRING]: instance %s not found, remove it\n' % inst.instance_id)
 
-        inst_data = rs['data']['instances'][0]
-
-        print inst_data
+        try:
+            inst_data = rs['data']['instances'][0]
+            (old_state, new_state) = (inst.state.name, State.objects.get(code=inst_data['state_code']))
+            inst.state = new_state
+        except Exception, ex:
+            (old_state, new_state) = (inst.state.name, State.objects.get(name='stop'))
+            inst.state = new_state
+            self.stdout.write('[INFO]: remove instance %s from node %s\n' % (inst.instance_id, node.name))
+            inst.net.ip == '0.0.0.0'
+            node.instances.remove(inst)
+        inst.save()
+        self.stdout.write('[INFO]: change instance %s state from %s to %s\n' % (inst.instance_id, old_state, new_state))
 
         self.stdout.write('[INFO]: refresh instance %s\n' % inst.instance_id)
 

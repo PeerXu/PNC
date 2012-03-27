@@ -383,7 +383,7 @@ class Node(Controller):
                                     InstanceState.PAUSED):
             return
 
-        if inst.net.ip != "0.0.0.0":
+        if inst.net.ip and inst.net.ip != "0.0.0.0":
             return
         
         self._logger.debug("lookup instance %s ip from mac: %s" % \

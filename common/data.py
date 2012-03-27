@@ -39,8 +39,8 @@ class NetConfig:
     @staticmethod
     def new_instance(ip=None, mac=None):
         net = NetConfig()
-        net.ip = ip and net.ip
-        net.mac = mac and net.mac
+        net.ip = ip and net.ip or '0.0.0.0'
+        net.mac = mac and net.mac or '00:00:00:00:00:00'
         return net
 
 class Volume:

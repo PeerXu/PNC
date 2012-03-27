@@ -189,7 +189,7 @@ def view_start_instance(request):
                                     inst.image.image_id, inst.image.local_dev_real,
                                     None, None,
                                     None, None,
-                                    [inst.net.ip],
+                                    [inst.net.mac],
                                     None)
 
     if rs['code'] != 0:

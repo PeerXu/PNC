@@ -221,7 +221,6 @@ class Cluster(Controller):
 
         self._logger.info('refresh instance %s' % inst.instance_id)
         
-#        import pdb; pdb.set_trace()
         self._change_instance_state(inst, new_inst.state_code)
         inst.net = new_inst.net
         inst.volumes = new_inst.volumes
@@ -607,6 +606,8 @@ class Cluster(Controller):
         self._logger.debug('done')
 
     def do_describe_instances(self, inst_ids=None):
+        import copy
+
         self._logger.info('invoked')
 
         if inst_ids and  not isinstance(inst_ids, list):
@@ -621,7 +622,17 @@ class Cluster(Controller):
             else:
                 for inst_id in inst_ids:
                     inst = self._get_instance(inst_id)
-                    inst and rs.append(inst)
+                    if inst:
+                        oi = inst
+                        inst = copy.deepcopy(inst)
+
+                        if (inst.state_code == InstanceState.RUNNING and inst.net.ip != '0.0.0.0') or inst.state_code == InstanceState.TEARDOWN:
+                            inst.state_code = 0
+                        else:
+                            inst.state_code = 2
+
+                        rs.append(inst)
+                        
 
         self._logger.debug('done')
         return Result.new(0x0, {'msg': "describe instances",
