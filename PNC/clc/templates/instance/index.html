@@ -3,5 +3,32 @@
 {% block title %}PNC 云平台 -- 虚拟机管理{% endblock %}
 
 {% block instance_content %}
-instance list
+instance list<br>
+
+<table>
+  <tr>
+    <th>id</th><th>state</th><th>ip adddress</th><th>option</th>
+  </tr>
+  {% for instance in instances %}
+  <tr>
+    <td><a onclick="submit();return false;">{{ instance.instance_id }}</a></td>
+    <td>{{ instance.state.name }}</td>
+    <td>{{ instance.net.ip }}</td>
+    <td>
+      <form action="" method="POST">
+      {% csrf_token %}
+      {% ifequal instance.state.name 'running' %}
+      <input type="submit" name="option" value=" stop ">&nbsp;
+      {% endifequal %}
+      {% ifequal instance.state.name 'stop' %}
+      <input type="submit" name="option" value=" start ">&nbsp;
+      {% endifequal %}
+      <input type="submit" name="option" value=" detail ">
+      <input type="text" name="name" value="{{ instance.instance_id }}" hidden="true">
+    </td>
+    </form>
+  </tr>
+  {% endfor %}
+</table>
+
 {% endblock %}

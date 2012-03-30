@@ -92,10 +92,20 @@ def view_image(request):
     return render_to_response('image/index.html',
                               context_instance=RequestContext(request, {}))
 
-
 def view_instance(request):
-    return render_to_response('instance/index.html',
-                              context_instance=RequestContext(request, {}))
+    def start_handler(): return view_start_instance(request)
+    def stop_handler(): return default_result
+    def detail_handler(): return default_result
+
+    default_result = render_to_response('instance/index.html',
+                                        context_instance=RequestContext(request, {'instances': Instance.objects.all()}))
+
+    if request.method == 'POST':
+        option = request.POST.get('option', ['detail']).split()[0]
+        print request.POST
+        return locals()[option + '_handler']()
+
+    return default_result
 
 
 def _schedule_instance(inst, nid=None):
@@ -150,29 +160,29 @@ def _schedule_instance_explicit(params, nid):
 
 def view_start_instance(request):
     if request.method != "POST":
-        return render_to_response('instance/start.html', 
+        return render_to_response('instance/index.html',
                                   context_instance=RequestContext(request, {}))
     args_dict = request.POST
     name = args_dict.get('name', None)
     if name == None:
-        return render_to_response('instance/start.html', 
+        return render_to_response('instance/index.html',
                                   context_instance=RequestContext(request, {}))
 
     try:
         inst = Instance.objects.get(instance_id=name)
     except:
-        return render_to_response('instance/start.html', 
+        return render_to_response('instance/index.html', 
                                   context_instance=RequestContext(request, {}))
 
     current_user = auth.get_user(request)
     if not inst.user.username == current_user.username:
-        return render_to_response('instance/start.html', 
+        return render_to_response('instance/index.html', 
                                   context_instance=RequestContext(request, {}))
 
     # send start instance message to cc
     cc_name = _schedule_instance(inst)
     if cc_name == None:
-        return render_to_response('instance/start.html',
+        return render_to_response('instance/index.html',
                                   context_instance=RequestContext(request, {}))
 
     cc = Cluster.objects.get(name=cc_name)
@@ -193,7 +203,7 @@ def view_start_instance(request):
                                     None)
 
     if rs['code'] != 0:
-        return render_to_response('instance/start.html',
+        return render_to_response('instance/index.html',
                                   context_instance=RequestContext(request, {}))
 
     return HttpResponseRedirect("/clc/instance")

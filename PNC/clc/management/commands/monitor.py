@@ -137,11 +137,14 @@ class Command(BaseCommand):
             inst_data = rs['data']['instances'][0]
             (old_state, new_state) = (inst.state.name, State.objects.get(code=inst_data['state_code']))
             inst.state = new_state
+            inst.net.ip = inst_data['net']['ip']
+            inst.net.save()
         except Exception, ex:
             (old_state, new_state) = (inst.state.name, State.objects.get(name='stop'))
             inst.state = new_state
             self.stdout.write('[INFO]: remove instance %s from node %s\n' % (inst.instance_id, node.name))
             inst.net.ip == '0.0.0.0'
+            inst.net.save()
             node.instances.remove(inst)
         inst.save()
         self.stdout.write('[INFO]: change instance %s state from %s to %s\n' % (inst.instance_id, old_state, new_state))
