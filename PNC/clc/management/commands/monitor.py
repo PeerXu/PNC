@@ -129,6 +129,8 @@ class Command(BaseCommand):
         rs = cc_server.do_describe_instances([inst.instance_id])
 
         if rs['code'] != 0 or len(rs['data']['instances']) == 0:
+            inst.net.ip = '0.0.0.0'
+            inst.net.save()
             node.instances.remove(inst)
             node.save()
             self.stdout.write('[WARRING]: instance %s not found, remove it\n' % inst.instance_id)

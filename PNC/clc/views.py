@@ -54,6 +54,11 @@ def _mac_gen():
     digest = (hashlib.md5(str(time.time())+str(random.randint(0,255)).zfill(3)).hexdigest()[random.randint(0,26):][:6]).upper()
     return config.INSTANCE_MAC_PREFIX + ':'.join([''] + reduce(lambda x, acc: (x[0][2:], x[1] + [x[0][:2]]), xrange(len(digest)/2), (digest, []))[1])
 
+def view_remove_instance(request):
+    default_result = render_to_response('instance/index.html', context_instance=RequestContext(request, {}))
+    print "remove instance %s" % request.POST['name']
+    return HttpResponseRedirect("/clc/instance")
+
 def view_add_instance(request):
     if request.method != "POST":
         return render_to_response('instance/add.html', context_instance=RequestContext(request, {}))
@@ -93,16 +98,16 @@ def view_image(request):
                               context_instance=RequestContext(request, {}))
 
 def view_instance(request):
-    def start_handler(): return view_start_instance(request)
-    def stop_handler(): return default_result
+    def start_handler(): return view_start_instanceance(request)
+    def stop_handler(): return view_stop_instance(request)
     def detail_handler(): return default_result
+    def remove_handler(): return view_remove_instance(request)
 
     default_result = render_to_response('instance/index.html',
                                         context_instance=RequestContext(request, {'instances': Instance.objects.all()}))
 
     if request.method == 'POST':
         option = request.POST.get('option', ['detail']).split()[0]
-        print request.POST
         return locals()[option + '_handler']()
 
     return default_result
@@ -208,6 +213,47 @@ def view_start_instance(request):
 
     return HttpResponseRedirect("/clc/instance")
 
+def view_stop_instance(request):
+    default_result = render_to_response('instance/index.html',
+                                        context_instance=RequestContext(request, {}))
+    if request.method != 'POST':
+        return default_result
+
+    inst_id = request.POST.get('name', None)
+    if inst_id == None:
+        return default_result
+
+    try:
+        inst = Instance.objects.get(instance_id=inst_id)
+    except Exception, ex:
+        return default_result
+
+    cc_server = None
+    for cluster in Cluster.objects.all():
+        if cc_server:
+            break
+        for node in cluster.nodes.all():
+            if cc_server:
+                break
+            for inst_t in node.instances.all():
+                if inst_t.instance_id == inst.instance_id:
+                    cc_server = utils.get_conctrller_object(utils.uri_generator(cluster.socket.ip,
+                                                                                cluster.socket.port))
+                    break
+
+    if cc_server is None:
+        return default_result
+    
+    try:
+        rs = cc_server.do_terminate_instances([inst.instance_id])
+        if rs['code'] != 0x0:
+            return default_result
+    except Exception, ex:
+        print ex
+        return default_result
+
+
+    return HttpResponseRedirect("/clc/instance")
 
 def view_add_image(request):
     if request.method != 'POST':

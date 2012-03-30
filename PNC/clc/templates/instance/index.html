@@ -22,6 +22,7 @@ instance list<br>
       {% endifequal %}
       {% ifequal instance.state.name 'stop' %}
       <input type="submit" name="option" value=" start ">&nbsp;
+      <input type="submit" name="option" value=" remove ">&nbsp;
       {% endifequal %}
       <input type="submit" name="option" value=" detail ">
       <input type="text" name="name" value="{{ instance.instance_id }}" hidden="true">
