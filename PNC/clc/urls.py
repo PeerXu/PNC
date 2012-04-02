@@ -23,6 +23,7 @@ urlpatterns = patterns('',
     ('^instance/stop', "clc.views.view_stop_instance"),
     ('^instance/add', "clc.views.view_add_instance"),
     ('^instance/remove', "clc.views.view_remove_instance"),
+    ('^instance/detail', "clc.views.view_detail_instance"),
     # IMAGE
     ('^image/$', 'clc.views.view_image'),
     ('^image/add', "clc.views.view_add_image"),

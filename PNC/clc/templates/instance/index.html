@@ -7,13 +7,20 @@ instance list<br>
 
 <table>
   <tr>
-    <th>id</th><th>state</th><th>ip adddress</th><th>option</th>
+    <th>id</th>
+    <th>state</th>
+    <th>ip adddress</th>
+    <th>cores</th>
+    <th>memory</th>
+    <th>option</th>
   </tr>
   {% for instance in instances %}
   <tr>
     <td><a onclick="submit();return false;">{{ instance.instance_id }}</a></td>
     <td>{{ instance.state.name }}</td>
     <td>{{ instance.net.ip }}</td>
+    <td>{{ instance.params.cores }}</td>
+    <td>{{ instance.params.mem }}</td>
     <td>
       <form action="" method="POST">
       {% csrf_token %}

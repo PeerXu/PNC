@@ -19,6 +19,9 @@ map(lambda x: STATE.setdefault(x.name.upper(), x), State.objects.all())
 CLOUD = Cloud.objects.get(name='default')
 CONFIG = CLOUD.config
 
+INSTANCE_INDEX = lambda request: render_to_response('instance/index.html',
+                                            context_instance=RequestContext(request, {'instances': Instance.objects.all()}))
+
 def view_hello(request):
     return render_to_response('hello_world.html')
 
@@ -55,13 +58,12 @@ def _mac_gen():
     return config.INSTANCE_MAC_PREFIX + ':'.join([''] + reduce(lambda x, acc: (x[0][2:], x[1] + [x[0][:2]]), xrange(len(digest)/2), (digest, []))[1])
 
 def view_remove_instance(request):
-    default_result = render_to_response('instance/index.html', context_instance=RequestContext(request, {}))
     try:
         inst_id = request.POST['name']
         inst = Instance.objects.get(instance_id=inst_id)
     except Exception, ex:
         print ex
-        return default_result
+        return INSTANCE_INDEX(request)
 
     inst.state = STATE['PENDING']
     inst.save()
@@ -142,20 +144,63 @@ def view_image(request):
     return render_to_response('image/index.html',
                               context_instance=RequestContext(request, {}))
 
+def view_detail_instance(request):
+
+    if request.method != 'POST':
+        return INSTANCE_INDEX(request)
+
+    name = request.POST.get('name', None)
+    if name == None:
+        return INSTANCE_INDEX(request)
+    
+    try:
+        inst = Instance.objects.get(instance_id=name)
+    except Exception, ex:
+        print ex
+        return INSTANCE_INDEX(request)
+
+    return render_to_response('instance/detail.html',
+                              context_instance=RequestContext(request, {'instance': inst}))
+
+def view_edit_instance(request):
+
+    if request.method != 'POST':
+        return INSTANCE_INDEX(request)
+
+    try:
+        inst_id = request.POST['instance_id']
+        cores = request.POST['cores']
+        mem = request.POST['mem']
+    except Exception, ex:
+        print ex
+        return INSTANCE_INDEX(request)
+
+    try:
+        inst = Instance.objects.get(instance_id=inst_id)
+        if inst.state != STATE['STOP']: raise
+    except Exception, ex:
+        print ex
+        return INSTANCE_INDEX(request)
+
+    params = inst.params
+    params.cores = cores
+    params.mem = mem
+    params.save()
+
+    return INSTANCE_INDEX(request)
+
 def view_instance(request):
     def start_handler(): return view_start_instance(request)
     def stop_handler(): return view_stop_instance(request)
-    def detail_handler(): return default_result
+    def detail_handler(): return view_detail_instance(request)
     def remove_handler(): return view_remove_instance(request)
-
-    default_result = render_to_response('instance/index.html',
-                                        context_instance=RequestContext(request, {'instances': Instance.objects.all()}))
+    def edit_handler(): return view_edit_instance(request)
 
     if request.method == 'POST':
         option = request.POST.get('option', ['detail']).split()[0]
         return locals()[option + '_handler']()
 
-    return default_result
+    return INSTANCE_INDEX(request)
 
 
 def _schedule_instance(inst, nid=None):
@@ -259,19 +304,18 @@ def view_start_instance(request):
     return HttpResponseRedirect("/clc/instance")
 
 def view_stop_instance(request):
-    default_result = render_to_response('instance/index.html',
-                                        context_instance=RequestContext(request, {}))
+
     if request.method != 'POST':
-        return default_result
+        return INSTANCE_INDEX(request)
 
     inst_id = request.POST.get('name', None)
     if inst_id == None:
-        return default_result
+        return INSTANCE_INDEX(request)
 
     try:
         inst = Instance.objects.get(instance_id=inst_id)
     except Exception, ex:
-        return default_result
+        return INSTANCE_INDEX(request)
 
     cc_server = None
     for cluster in Cluster.objects.all():
@@ -287,15 +331,15 @@ def view_stop_instance(request):
                     break
 
     if cc_server is None:
-        return default_result
+        return INSTANCE_INDEX(request)
     
     try:
         rs = cc_server.do_terminate_instances([inst.instance_id])
         if rs['code'] != 0x0:
-            return default_result
+            return INSTANCE_INDEX(request)
     except Exception, ex:
         print ex
-        return default_result
+        return INSTANCE_INDEX(request)
 
 
     return HttpResponseRedirect("/clc/instance")

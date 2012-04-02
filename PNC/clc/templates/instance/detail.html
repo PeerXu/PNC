@@ -1,0 +1,19 @@
+{% extends "instance/base.html" %}
+
+{% block title %}PNC 云平台 -- 虚拟机详细信息{% endblock %}
+
+{% block instance_content %}
+
+<h2>虚拟机详细信息</h2>
+
+<form action="" method="POST">
+  {% csrf_token %}
+  <label>instance id</label><input type="text" value="{{ instance.instance_id }}" name="instance_id"><br>
+  <label>image id</label><input type="text" value="{{ instance.image.image_id }}"><br>
+  <label>cores</label><input type="text" value="{{ instance.params.cores }}" name="cores"><br>
+  <label>memory</label><input tpye="text" value="{{ instance.params.mem }}" name="mem"><br>
+  <input type="text" name="option" value="edit" hidden="true">
+  <input type="submit" value="submit">
+</form>
+
+{% endblock %}
