@@ -3,9 +3,10 @@ import time
 
 from django.core.management.base import BaseCommand, CommandError
 
-from clc.models import Cluster, Instance, State, Socket
+from clc.models import Cluster, Instance, State, Socket, Config
 from common import utils
-    
+
+config = Config.objects.get(name='default')
 
 class Command(BaseCommand):
     def _cluster_server(self, cluster):
@@ -156,7 +157,8 @@ class Command(BaseCommand):
         
 
     def handle(self, *args, **kwargs):
+        monitor_interval = config.monitor_interval
         while True:
             clusters = Cluster.objects.all()
             map(self._refresh_cluster, clusters)
-            time.sleep(5)
+            time.sleep(monitor_interval)

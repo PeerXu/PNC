@@ -56,8 +56,34 @@ def _mac_gen():
 
 def view_remove_instance(request):
     default_result = render_to_response('instance/index.html', context_instance=RequestContext(request, {}))
-    print "remove instance %s" % request.POST['name']
+    try:
+        inst_id = request.POST['name']
+        inst = Instance.objects.get(instance_id=inst_id)
+    except Exception, ex:
+        print ex
+        return default_result
+
+    inst.state = STATE['PENDING']
+    inst.save()
+    
+#    print "remove instance image %s from %s" % (inst.image.image_id, inst.image.local_dev_real)
+    utils.remove(inst.image.local_dev_real)
+    image = inst.image
+#    print "remove instance %s from database" % inst_id
+    inst.delete()
+#    print "remove instance image %s from database" % inst.image.image_id
+    image.delete()
     return HttpResponseRedirect("/clc/instance")
+
+def _image_copy_handler(src, dst, inst):
+    import shutil
+    try:
+        shutil.copy(src, dst)
+    finally:
+        inst.image.state=STATE['ACTIVE']
+        inst.image.save()
+        inst.state=STATE['STOP']
+        inst.save()
 
 def view_add_instance(request):
     if request.method != "POST":
@@ -68,12 +94,26 @@ def view_add_instance(request):
         return render_to_response('instance/add.html', context_instance=RequestContext(request, {}))
 
     try:
+        import threading
+
         user = User.objects.get(username=request.POST['username'])
         image = Image.objects.get(image_id=request.POST.get('image', ''))
+        src = image.local_dev_real
+
+        phy_name = image.local_dev.rsplit('.', 1)[0] + "-" + inst_name + ".img"
+        Image.objects.create(image_id=image.image_id + "-" + inst_name,
+                             remote_dev=image.remote_dev,
+                             local_dev=phy_name,
+                             local_dev_real=config.IMAGE_PATH+phy_name,
+                             state=STATE['PENDING'])
+        image = Image.objects.get(local_dev=phy_name)
+        dst = image.local_dev_real
+
         params = VirtualMachine.objects.create(name='custom',
                                                cores=request.POST.get('cores', 1),
                                                mem=request.POST.get('memory', 64),
                                                disk=request.POST.get('disk', 0))
+
         Instance.objects.create(instance_id=inst_name,
                                 name=inst_name,
                                 image=image,
@@ -84,13 +124,18 @@ def view_add_instance(request):
                                 params=params,
                                 net=NetConfig.objects.create(ip="0.0.0.0",
                                                              mac=_mac_gen()),
-                                state=STATE['STOP'],)
+                                state=STATE['PENDING'],)
+
+        inst = Instance.objects.get(instance_id=inst_name)
+        threading.Thread(target=_image_copy_handler, args=(src, dst, inst)).start()
+        
     except Exception, ex:
+        print ex
         params.delete()
         return render_to_response('instance/add.html',
                                   context_instance=RequestContext(request, {}))
 
-    return HttpResponseRedirect("/clc")
+    return HttpResponseRedirect("/clc/instance")
 
 
 def view_image(request):
@@ -98,7 +143,7 @@ def view_image(request):
                               context_instance=RequestContext(request, {}))
 
 def view_instance(request):
-    def start_handler(): return view_start_instanceance(request)
+    def start_handler(): return view_start_instance(request)
     def stop_handler(): return view_stop_instance(request)
     def detail_handler(): return default_result
     def remove_handler(): return view_remove_instance(request)

@@ -7,6 +7,7 @@ import re
 import time
 import hashlib
 import xmlrpclib
+import os
 
 import config
 
@@ -90,6 +91,9 @@ def uri_generator(ip, port):
 
 def get_conctrller_object(uri):
     return xmlrpclib.ServerProxy(uri, allow_none=True)
+    
+def remove(fn):
+    os.path.exists(fn) and os.remove(fn)
     
 
 class Lock():

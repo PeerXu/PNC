@@ -143,6 +143,7 @@ class Schedule(models.Model):
 class Config(models.Model):
     name = models.CharField(max_length=255, unique=True)
     schedule = models.ForeignKey(Schedule)
+    monitor_interval = models.IntegerField(max_length=255, default=3)
 
     def __unicode__(self):
         return self.name
