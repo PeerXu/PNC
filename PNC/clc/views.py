@@ -19,8 +19,13 @@ map(lambda x: STATE.setdefault(x.name.upper(), x), State.objects.all())
 CLOUD = Cloud.objects.get(name='default')
 CONFIG = CLOUD.config
 
-INSTANCE_INDEX = lambda request: render_to_response('instance/index.html',
-                                            context_instance=RequestContext(request, {'instances': Instance.objects.all()}))
+#INSTANCE_INDEX = lambda request: render_to_response('instance/index.html',
+#                                                    context_instance=RequestContext(request, {'instances': Instance.objects.all()}))
+
+def INSTANCE_INDEX(request):
+    return render_to_response('instance/index.html',
+                              context_instance=RequestContext(request, {'instances': Instance.objects.filter(user=request.user)}))
+    
 
 def view_hello(request):
     return render_to_response('hello_world.html')
