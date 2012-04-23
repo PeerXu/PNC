@@ -8,24 +8,20 @@ from django.http import HttpResponseRedirect
 from django.shortcuts import render_to_response
 from django.template import RequestContext
 
+from clc.constant import STATE, CLOUD, CONFIG
+
 from clc.models import Cloud, Cluster, Image, Kernel, Ramdisk, NetConfig, Instance, VirtualMachine, State
 
 from common import utils
 import config
 
-STATE = {}
-map(lambda x: STATE.setdefault(x.name.upper(), x), State.objects.all())
-
-CLOUD = Cloud.objects.get(name='default')
-CONFIG = CLOUD.config
-
-#INSTANCE_INDEX = lambda request: render_to_response('instance/index.html',
-#                                                    context_instance=RequestContext(request, {'instances': Instance.objects.all()}))
-
 def INSTANCE_INDEX(request):
     return render_to_response('instance/index.html',
                               context_instance=RequestContext(request, {'instances': Instance.objects.filter(user=request.user)}))
-    
+
+def IMAGE_INDEX(request):
+    return render_to_response('image/index.html',
+                              context_instance=RequestContext(request, {'images': Image.objects.all()}))
 
 def view_hello(request):
     return render_to_response('hello_world.html')
@@ -145,10 +141,6 @@ def view_add_instance(request):
     return HttpResponseRedirect("/clc/instance")
 
 
-def view_image(request):
-    return render_to_response('image/index.html',
-                              context_instance=RequestContext(request, {}))
-
 def view_detail_instance(request):
 
     if request.method != 'POST':
@@ -166,6 +158,23 @@ def view_detail_instance(request):
 
     return render_to_response('instance/detail.html',
                               context_instance=RequestContext(request, {'instance': inst}))
+
+def view_detail_image(request):
+    if request.method != 'POST':
+        return IMAGE_INDEX(request)
+
+    id = request.POST.get('id', None)
+    if id == None:
+        return IMAGE_INDEX(request)
+
+    try:
+        img = Image.objects.get(image_id=id)
+    except Exception, ex:
+        print ex
+        return IMAGE_INDEX(request)
+    
+    return render_to_response('image/detail.html',
+                              context_instance=RequestContext(request, {'image': img}))
 
 def view_edit_instance(request):
 
@@ -207,9 +216,17 @@ def view_instance(request):
 
     return INSTANCE_INDEX(request)
 
+def view_image(request):
+    def detail_handler(): return view_detail_image(request)
+    
+    if request.method == 'POST':
+        option = request.POST.get('option', ['detail']).split()[0]
+        return locals()[option + '_handler']()
+    
+    return IMAGE_INDEX(request)
 
 def _schedule_instance(inst, nid=None):
-    schedule = CONFIG.schedule.name
+    schedule = CONFIG().schedule.name
     schedule_name = '_schedule_instance_' + schedule
     try:
         _schedule_instance = globals()[schedule_name]

@@ -1,0 +1,15 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+import sys
+HOME = "/opt/PNC"
+sys.path.append(HOME)
+del sys
+
+def main():
+    import os
+    os.system("cd /opt/PNC/PNC")
+    os.system("python manage.py monitor")
+
+if __name__ == '__main__':
+   main()

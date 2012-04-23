@@ -160,7 +160,7 @@ class Cluster(Controller):
                 return
         except:
             self._logger.warn('failed to connect node %s' % insts[0].node.uri)
-
+            return
 
         data_instances = rs['data']['instances']
         new_instances_map = {}

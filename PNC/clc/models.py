@@ -154,6 +154,12 @@ class Cloud(models.Model):
     config = models.ForeignKey(Config)
     clusters = models.ManyToManyField(Cluster, blank=True, null=True)
     terminated_instances = models.ManyToManyField(Instance, blank=True, null=True)
+    config_max_disk = models.IntegerField(max_length=255, default=0, editable=False)
+    disk_max = models.IntegerField(max_length=255, default=0, editable=False)
+    config_max_mem = models.IntegerField(max_length=255, default=0, editable=False)
+    mem_max = models.IntegerField(max_length=255, default=0, editable=False)
+    config_max_cores = models.IntegerField(max_length=255, default=0, editable=False)
+    cores_max = models.IntegerField(max_length=255, default=0, editable=False)
 
     def __unicode__(self):
         return self.name

@@ -1,4 +1,4 @@
-BIN=get_sys_info startup_node startup_cluster populate_arp
+BIN=get_sys_info startup_node startup_cluster startup_cloud populate_arp
 
 DEST=/usr/sbin
 SRC=/opt/PNC/tools

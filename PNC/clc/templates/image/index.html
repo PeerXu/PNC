@@ -7,6 +7,24 @@ image list<br>
 
 <table>
   <tr>
+    <th>id</th>
+    <th>state</th>
+    <th>image name</th>
+    <th>option</th>
   </tr>
+  {% for image in images %}
+  <tr>
+    <td>{{ image.id }}</td>
+    <td>{{ image.state.name }}</td>
+    <td>{{ image.local_dev }}</td>
+    <td>
+      <form action="" method="POST">
+	{% csrf_token %}
+	<input type="submit" name="option" value=" detail ">
+	<input type="text" name="id" value="{{ image.image_id }}" hidden="true">
+      </form>
+    </td>
+  </tr>
+  {% endfor %}
 </table>
 {% endblock %}

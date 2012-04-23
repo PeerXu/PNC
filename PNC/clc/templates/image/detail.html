@@ -1,0 +1,13 @@
+{% extends "image/base.html" %}
+{% url clc.view.view_image as image_url %}
+
+{% block title %}PNC 云平台 -- 镜像详细信息{% endblock %}
+
+{% block image_content %}
+
+<lebal>image id: </lebal><span>{{ image.image_id }}</span><br>
+<lebal>state: </lebal><span>{{ image.state.name }}</span><br>
+<lebal>image name: </lebal><span>{{ image.local_dev }}</span><br>
+<lebal>path: </lebal><span>{{ image.local_dev_real }}x</span><br>
+
+{% endblock %}

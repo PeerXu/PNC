@@ -3,10 +3,9 @@ import time
 
 from django.core.management.base import BaseCommand, CommandError
 
-from clc.models import Cluster, Instance, State, Socket, Config
+from clc.constant import CLOUD, CLUSTER, CONFIG, STATE
+from clc.models import Cloud, Cluster, Instance, State, Socket, Config
 from common import utils
-
-config = Config.objects.get(name='default')
 
 class Command(BaseCommand):
     def _cluster_server(self, cluster):
@@ -154,11 +153,26 @@ class Command(BaseCommand):
 
         self.stdout.write('[INFO]: refresh instance %s\n' % inst.instance_id)
 
-        
+    def _refresh_cloud(self, cloud):
+        def refresh_resource(cluster):
+            cloud.config_max_disk += cluster.config_max_disk
+            cloud.disk_max += cluster.disk_max
+            cloud.config_max_mem += cluster.config_max_mem
+            cloud.mem_max += cluster.mem_max
+            cloud.config_max_cores += cluster.config_max_cores
+            cloud.cores_max += cluster.cores_max
+
+        self.stdout.write('[INFO]: refresh cloud\n')
+        cloud.config_max_disk = cloud.config_max_cores = cloud.config_max_mem = cloud.disk_max = cloud.cores_max = cloud.mem_max = 0
+        [refresh_resource(cluster) for cluster in CLUSTER() if cluster.state == STATE['RUNNING']]
+        self.stdout.write('''%-10s:%-10s:%-10s\n''' % ("cloud", "max", "current"))
+        self.stdout.write('''%-10s %-10s %-10s\n''' % ("disk", cloud.config_max_disk, cloud.disk_max))
+        self.stdout.write('''%-10s %-10s %-10s\n''' % ("cores", cloud.config_max_cores, cloud.cores_max))
+        self.stdout.write('''%-10s %-10s %-10s\n''' % ("memory", cloud.config_max_mem, cloud.mem_max))
+        cloud.save()
 
     def handle(self, *args, **kwargs):
-        monitor_interval = config.monitor_interval
         while True:
-            clusters = Cluster.objects.all()
-            map(self._refresh_cluster, clusters)
-            time.sleep(monitor_interval)
+            map(self._refresh_cluster, CLUSTER())
+            self._refresh_cloud(CLOUD())
+            time.sleep(CONFIG().monitor_interval)
