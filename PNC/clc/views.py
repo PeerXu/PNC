@@ -394,3 +394,15 @@ def view_add_image(request):
                          state=STATE['ACTIVE'])
     
     return HttpResponseRedirect("/clc")
+
+def view_describe_cloud(request):
+    return HttpResponseRedirect("/clc")
+
+def view_describe_cluster(request, cid):
+    return HttpResponseRedirect("/clc")
+
+def view_describe_node(request, cid):
+    return HttpResponseRedirect("/clc")
+
+def view_describe_instance(request, iid):
+    return HttpResponseRedirect("/clc")

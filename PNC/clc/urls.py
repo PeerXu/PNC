@@ -1,7 +1,6 @@
 from django.conf.urls import patterns
 from django.views.generic.base import TemplateView
 import os
-#import pdb; pdb.set_trace()
 
 FILE_PATH = os.path.dirname(__file__)
 
@@ -27,5 +26,9 @@ urlpatterns = patterns('',
     # IMAGE
     ('^image/$', 'clc.views.view_image'),
     ('^image/add', "clc.views.view_add_image"),
-#    ('^demo/base', TemplateView.as_view(template_name='base.html')),
+    # RESOURCE
+    ('^resource/cloud$', "clc.views.view_describe_cloud"),
+    ('^resource/cluster/(?P<cid>.*)$', "clc.views.view_describe_cluster"),
+    ('^resource/node/(?P<cid>.*)$', "clc.views.view_describe_node"),
+    ('^resource/instance/(?P<iid>.*)$', "clc.views.view_describe_instance"),
 )
