@@ -108,6 +108,8 @@ def view_add_instance(request):
                              remote_dev=image.remote_dev,
                              local_dev=phy_name,
                              local_dev_real=config.IMAGE_PATH+phy_name,
+                             max_size=image.max_size,
+                             size=image.size,
                              state=STATE['PENDING'])
         image = Image.objects.get(local_dev=phy_name)
         dst = image.local_dev_real
@@ -239,6 +241,7 @@ def _cluster_resource_point(cluster):
     return cluster.cores_max * config.CORES_POINT_PER_COUNT + cluster.mem_max * config.MEMORY_POINT_PER_MB + cluster.disk_max * config.DISK_POINT_PER_MB
 
 def _verify_resource(params, cluster):
+    import pdb; pdb.set_trace()
     lacks = []
     if cluster.cores_max < params.cores:
         lacks.append('cores')
@@ -277,30 +280,26 @@ def _schedule_instance_explicit(params, nid):
 
 def view_start_instance(request):
     if request.method != "POST":
-        return render_to_response('instance/index.html',
-                                  context_instance=RequestContext(request, {}))
+        return INSTANCE_INDEX(request)
+
     args_dict = request.POST
     name = args_dict.get('name', None)
     if name == None:
-        return render_to_response('instance/index.html',
-                                  context_instance=RequestContext(request, {}))
+        return INSTANCE_INDEX(request)
 
     try:
         inst = Instance.objects.get(instance_id=name)
     except:
-        return render_to_response('instance/index.html', 
-                                  context_instance=RequestContext(request, {}))
+        return INSTANCE_INDEX(request)
 
     current_user = auth.get_user(request)
     if not inst.user.username == current_user.username:
-        return render_to_response('instance/index.html', 
-                                  context_instance=RequestContext(request, {}))
+        return INSTANCE_INDEX(request)
 
     # send start instance message to cc
     cc_name = _schedule_instance(inst)
     if cc_name == None:
-        return render_to_response('instance/index.html',
-                                  context_instance=RequestContext(request, {}))
+        return INSTANCE_INDEX(request)
 
     cc = Cluster.objects.get(name=cc_name)
 
@@ -320,8 +319,7 @@ def view_start_instance(request):
                                     None)
 
     if rs['code'] != 0:
-        return render_to_response('instance/index.html',
-                                  context_instance=RequestContext(request, {}))
+        return INSTANCE_INDEX(request)
 
     return HttpResponseRedirect("/clc/instance")
 
@@ -387,22 +385,22 @@ def view_add_image(request):
         return render_to_response('image/add.html', 
                                   context_instance=RequestContext(request, {}))
 
+    path = config.IMAGE_PATH+phy_name
+    info = utils.image_info(path)
+
     Image.objects.create(image_id=img_id,
                          remote_dev='',
                          local_dev=phy_name,
-                         local_dev_real=config.IMAGE_PATH+phy_name,
+                         local_dev_real=path,
+                         max_size=info['max_size'],
+                         size=info['size'],
                          state=STATE['ACTIVE'])
     
     return HttpResponseRedirect("/clc")
 
-def view_describe_cloud(request):
+def view_describe_resource(request, object, id=None):
     return HttpResponseRedirect("/clc")
 
-def view_describe_cluster(request, cid):
-    return HttpResponseRedirect("/clc")
-
-def view_describe_node(request, cid):
-    return HttpResponseRedirect("/clc")
-
-def view_describe_instance(request, iid):
-    return HttpResponseRedirect("/clc")
+def view_resource_cloud(request):
+    return render_to_response('resource/cloud.html',
+                              context_instance=RequestContext(request, {'resource': CLOUD()}))

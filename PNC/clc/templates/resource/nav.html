@@ -1,4 +1,4 @@
-{% url clc.views.view_add_image as add_image_url %}
+{% url clc.views.view_resource_cloud as cloud_resource_url %}
 <style type="text/css">
 #nb {
   font: 13px/27px Arial, sans-serif;
@@ -24,12 +24,7 @@
 <div id="nb">
   <ul>
     <li>
-      <a href="{{ add_image_url }}"><span class="nbzt">添加镜像</span></a>
+      <a href="{{ cloud_resource_url }}"><span class="nbzt">云平台资源</span></a>
     </li>
-<!--
-    <li>
-      <a href="#"><span class="nbzt">删除镜像</span></a>
-    </li>
--->
   </ul>
 </div>

@@ -10,8 +10,19 @@ import xmlrpclib
 import os
 
 import config
+from common.lock import FileLock
 
 kb2mb = lambda x: int(x) / 1024
+b2mb = lambda x: int(x) / 1024 / 1024
+
+def trans_by_unit(s):
+    value, unit = s[:-1], s[-1]
+    if unit == 'G':
+        return int(float(value) * 1024)
+    if unit == 'M':
+        return int(value)
+
+    raise Exception, "trans_by_unit error"
 
 #def get_sys_info(script_name="get_sys_info"):
 #    script_cmd = config.TOOLS_PATH + script_name
@@ -33,9 +44,9 @@ def get_value_from_outpout(output, key):
         while line:
             (k, v) = line.split("=")
             if k == key:
-                return v
+                return int(v)
             line = fo.readline()
-        return None
+        return 0
     finally:
         fo and fo.close()
 
@@ -116,7 +127,7 @@ class DjangoLock():
         self.filename = filename
         self.handle = open(filename, 'w')
     def __del__(self):
-        self.handle and self.nadle.close()
+        self.handle and self.handle.close()
     def __enter__(self):
         self.acquire()
         return self
@@ -155,8 +166,44 @@ class ResultThread(threading.Thread):
         self.run_time = time.time() - now
         self.is_done = True
 
+def _image_info_by_command(path):
+    if not os.path.exists(path):
+        return (-1, None)
+    
+    import commands
+    (status, output) = commands.getstatusoutput('qemu-img info %s' % path)
+    if status:
+        return (status, None)
+
+    try:
+        m = {'image': ('image', lambda s: s), 
+             'virtual_size': ('max_size', lambda x: b2mb(int(x.split('(', 1)[1].split()[0]))), 
+             'disk_size': ('size', trans_by_unit)}
+             
+        d = {}
+        map(lambda x: (lambda k, v: (lambda k1, v1: d.setdefault(m.get(k1, (k1,0))[0],m.get(k1, (k1, lambda s: s))[1](v1)))(k.replace(' ', '_'), v[1:]))(*x.split(':')), output.split('\n'))
+    except:
+        return (-1, None)
+             
+    return (0, d)
+
+def image_info(path):
+    try:
+        ret, info = _image_info_by_command(path)
+        if ret != 0:
+            return {'image': path,
+                    'max_size': 0,
+                    'size': 0}
+    except:
+        return {'image': path,
+                'max_size': 0,
+                'size': 0}
+
+    return info
+
 def main():
-    pass
+    import sys; sys.path.append('/opt/PNC/')
+    print image_info('/opt/PNC/images/1.img')
     
 if __name__ == '__main__':
     main()

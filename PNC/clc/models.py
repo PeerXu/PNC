@@ -39,6 +39,8 @@ class Volume(models.Model):
     local_dev = models.CharField(max_length=255)
     local_dev_real = models.CharField(max_length=255)
     state = models.ForeignKey(State)
+    max_size = models.IntegerField(max_length=255)
+    size = models.IntegerField(max_length=255)
 
     def __unicode__(self):
         return self.volume_id
@@ -49,6 +51,8 @@ class Image(models.Model):
     local_dev = models.CharField(max_length=255)
     local_dev_real = models.CharField(max_length=255)
     state = models.ForeignKey(State)
+    max_size = models.IntegerField(max_length=255)
+    size = models.IntegerField(max_length=255)
 
     def __unicode__(self):
         return self.image_id
@@ -59,6 +63,8 @@ class Kernel(models.Model):
     local_dev = models.CharField(max_length=255)
     local_dev_real = models.CharField(max_length=255)
     state = models.ForeignKey(State)
+    max_size = models.IntegerField(max_length=255)
+    size = models.IntegerField(max_length=255)
 
     def __unicode__(self):
         return self.kernel_id
@@ -69,6 +75,8 @@ class Ramdisk(models.Model):
     local_dev = models.CharField(max_length=255)
     local_dev_real = models.CharField(max_length=255)
     state = models.ForeignKey(State)
+    max_size = models.IntegerField(max_length=255)
+    size = models.IntegerField(max_length=255)
 
     def __unicode__(self):
         return self.ramdisk_id
@@ -77,12 +85,6 @@ class Ramdisk(models.Model):
 class Instance(models.Model):
     instance_id = models.CharField(max_length=255, unique=True)
     name = models.CharField(max_length=255, unique=True)
-#    image_id = models.CharField(max_length=255, blank=True)
-#    image_url = models.CharField(max_length=255, blank=True)
-#    kernel_id = models.CharField(max_length=255, blank=True)
-#    kernel_url = models.CharField(max_length=255, blank=True)
-#    ramdisk_id = models.CharField(max_length=255, blank=True)
-#    ramdisk_url = models.CharField(max_length=255, blank=True)
     image = models.ForeignKey(Image, null=True, blank=True)
     kernel = models.ForeignKey(Kernel, null=True, blank=True)
     ramdisk = models.ForeignKey(Ramdisk, null=True, blank=True)

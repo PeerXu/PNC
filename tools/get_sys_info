@@ -2,6 +2,8 @@
 
 total_memory=`cat /proc/meminfo | grep MemTotal | awk '{print $2}'`
 nr_cores=`cat /proc/cpuinfo | grep -E "^processor\s+:\s+\w+$" | wc -l`
+total_disk=`df -k /opt/PNC/images/ | grep -v Filesystem | head -n 1 | awk '{print $4}'`
 
 echo "total_memory="$total_memory
 echo "nr_cores="$nr_cores
+echo "total_disk="$total_disk

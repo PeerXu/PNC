@@ -120,11 +120,13 @@ class Cluster(Controller):
             
         self._logger.debug('invoked')
         
-        detail = ClusterDetail()
-        detail.uri = self._cc_detail.uri
-        detail.sched_policy = self._cc_detail.sched_policy
-        detail.sched_state = self._cc_detail.sched_state
-        self._cc_detail = detail
+#        detail = ClusterDetail()
+#        detail.uri = self._cc_detail.uri
+#        detail.sched_policy = self._cc_detail.sched_policy
+#        detail.sched_state = self._cc_detail.sched_state
+#        self._cc_detail = detail
+        dt = self._cc_detail
+        dt.config_max_cores = dt.cores_max = dt.config_max_mem = dt.mem_max = dt.config_max_disk = dt.disk_max = 0
         
         [refresh() for res in self._iter_running_node()]
         

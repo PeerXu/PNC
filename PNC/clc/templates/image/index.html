@@ -10,6 +10,8 @@ image list<br>
     <th>id</th>
     <th>state</th>
     <th>image name</th>
+    <th>max size(MB)</th>
+    <th>size(MB)</th>
     <th>option</th>
   </tr>
   {% for image in images %}
@@ -17,6 +19,8 @@ image list<br>
     <td>{{ image.id }}</td>
     <td>{{ image.state.name }}</td>
     <td>{{ image.local_dev }}</td>
+    <td>{{ image.max_size }}</td>
+    <td>{{ image.size }}</td>
     <td>
       <form action="" method="POST">
 	{% csrf_token %}

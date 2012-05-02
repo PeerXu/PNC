@@ -3,9 +3,10 @@ import time
 
 from django.core.management.base import BaseCommand, CommandError
 
-from clc.constant import CLOUD, CLUSTER, CONFIG, STATE
+from clc.constant import CLOUD, CLUSTER, CONFIG, STATE, RUNNING_INSTANCE
 from clc.models import Cloud, Cluster, Instance, State, Socket, Config
 from common import utils
+import config
 
 class Command(BaseCommand):
     def _cluster_server(self, cluster):
@@ -67,6 +68,10 @@ class Command(BaseCommand):
 
         map(lambda x: self._refresh_node(*x), [(cluster, node) for node in cluster.nodes.all()])
 
+        # fix: if cluster.disk_max < 0, then fix to 0
+        if cluster.disk_max < 0:
+            cluster.disk_max = 0
+            cluster.save()
 
     def _refresh_node(self, cluster, node):
 
@@ -151,6 +156,24 @@ class Command(BaseCommand):
         inst.save()
         self.stdout.write('[INFO]: change instance %s state from %s to %s\n' % (inst.instance_id, old_state, new_state))
 
+        # refresh iamge size
+        img = inst.image
+        old_size = img.size
+        new_size = utils.image_info(img.local_dev_real)['size']
+        img.size = new_size
+        img.save()
+
+        # refresh instance disk size
+        params = inst.params
+        params.disk = img.max_size - img.size
+        params.save()
+
+        # update disk free to cluster
+        cluster.disk_max -= inst.params.disk
+        cluster.save()
+        
+        self.stdout.write('[INFO]: refresh image size: from %sMB to %sMB\n' % (old_size, new_size))
+
         self.stdout.write('[INFO]: refresh instance %s\n' % inst.instance_id)
 
     def _refresh_cloud(self, cloud):
@@ -161,6 +184,7 @@ class Command(BaseCommand):
             cloud.mem_max += cluster.mem_max
             cloud.config_max_cores += cluster.config_max_cores
             cloud.cores_max += cluster.cores_max
+            
 
         self.stdout.write('[INFO]: refresh cloud\n')
         cloud.config_max_disk = cloud.config_max_cores = cloud.config_max_mem = cloud.disk_max = cloud.cores_max = cloud.mem_max = 0

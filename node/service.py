@@ -103,10 +103,8 @@ class Node(Controller):
             sys.exit(1)
 
         rs_cores = utils.get_value_from_outpout(output, "nr_cores")
-        rs_cores = int(rs_cores)
-        
         rs_mem = utils.get_value_from_outpout(output, "total_memory")
-        rs_mem = int(rs_mem)
+        rs_disk = utils.get_value_from_outpout(output, "total_disk")
         
         if rs_cores == -1 or rs_mem == -1:
             self._logger.error("get system information failed")
@@ -124,8 +122,9 @@ class Node(Controller):
         self._nc_detail.config_max_mem = utils.kb2mb(rs_mem) - config.NODE_RESERVE_MEM
         self._nc_detail.mem_max = self._nc_detail.config_max_mem
         
-        # set 0
-        self._nc_detail.config_max_disk = self._nc_detail.disk_max = 0
+        # 10G for system use
+        self._nc_detail.config_max_disk = utils.kb2mb(rs_disk) - config.NODE_RESERVE_DISK
+        self._nc_detail.disk_max = self._nc_detail.config_max_disk
 
         self._res_lock.release()
 
@@ -145,7 +144,7 @@ class Node(Controller):
         self._logger.debug("invoked.")
         while True:
             self._logger.debug("wake up")
-            now = time.time()            
+            now = time.time()
             self._logger.debug("monitor thread running...")
             self._inst_lock.acquire()
 
@@ -177,7 +176,6 @@ class Node(Controller):
                 # change instance state to teardown, all resource has been release
                 self._change_instance_state(inst, InstanceState.TEARDOWN)
                 inst.termination_time = time.time()
-                                
             self._inst_lock.release()
             self._logger.debug("sleep")
             time.sleep(config.NODE_MONITOR_INTERVAL)

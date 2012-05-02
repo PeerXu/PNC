@@ -27,8 +27,6 @@ urlpatterns = patterns('',
     ('^image/$', 'clc.views.view_image'),
     ('^image/add', "clc.views.view_add_image"),
     # RESOURCE
-    ('^resource/cloud$', "clc.views.view_describe_cloud"),
-    ('^resource/cluster/(?P<cid>.*)$', "clc.views.view_describe_cluster"),
-    ('^resource/node/(?P<cid>.*)$', "clc.views.view_describe_node"),
-    ('^resource/instance/(?P<iid>.*)$', "clc.views.view_describe_instance"),
+#    ('^resource/(?P<object>.*)/(?P<id>.*)$', "clc.views.view_describe_resource"),
+    ('^resource/cloud$', "clc.views.view_resource_cloud"),
 )

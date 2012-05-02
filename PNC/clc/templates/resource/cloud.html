@@ -1,0 +1,28 @@
+{% extends "resource/base.html" %}
+
+{% block title %}PNC 云平台 -- 资源信息{% endblock %}
+
+{% block resource_content %}
+<table>
+  <tr>
+    <th>&nbsp;</th>
+    <th>max</th>
+    <th>current</th>
+  </tr>
+  <tr>
+    <th>cpu</th>
+    <td>{{ resource.config_max_cores }}</td>
+    <td>{{ resource.cores_max }}</td>
+  </tr>
+  <tr>
+    <th>memory</th>
+    <td>{{ resource.config_max_mem }}</td>
+    <td>{{ resource.mem_max }}</td>
+  </tr>
+  <tr>
+    <th>disk</th>
+    <td>{{ resource.config_max_disk }}</td>
+    <td>{{ resource.disk_max }}</td>
+  </tr>
+</table>
+{% endblock %}
